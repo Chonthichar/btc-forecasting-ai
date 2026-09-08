@@ -12,6 +12,9 @@ COPY requirements.txt ./requirements.txt
 
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
+COPY requirements-agents.txt ./requirements-agents.txt
+RUN pip install -r requirements-agents.txt
+
 COPY --chown=1000:1000 . .
 RUN chown 1000:1000 /app
 
@@ -27,4 +30,4 @@ ENV BTC_PROJECT_ROOT=/app \
 # Dashboard, FastAPI and Gradio share the same public port.
 EXPOSE 7860
 
-CMD ["python", "-m", "app.space_server"]
+CMD ["sh", "-c", "uvicorn app.api:app --host 127.0.0.1 --port 8000 & python app/app_gradio.py"]
