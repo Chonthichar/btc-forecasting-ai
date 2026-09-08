@@ -1,0 +1,2 @@
+# Official framework used by the conversational Decision Agent.
+openai-agents==0.22.1
