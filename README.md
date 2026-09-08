@@ -1,3 +1,9 @@
+---
+title: Crypto Forecasting AI
+emoji: ₿
+sdk: docker
+app_port: 7860
+---
 # BTC Reproducible Multimodal Forecasting Pipeline — Sentiment Ablation V4
 
 This project tests whether BTC news sentiment has **standalone** and **incremental** predictive value at **1h, 6h, and 24h** horizons, and adds a separate daily paper-style experiment for comparison with published Bitcoin-sentiment studies.

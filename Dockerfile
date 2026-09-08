@@ -9,16 +9,22 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY requirements.txt ./requirements.txt
+
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY . .
+COPY --chown=1000:1000 . .
+RUN chown 1000:1000 /app
 
 ENV BTC_PROJECT_ROOT=/app \
-    BTC_SENTIMENT_SCRIPT=/app/sentiment_pipeline/btc_sentiment_agents.py
+    BTC_SENTIMENT_SCRIPT=/app/sentiment_pipeline/btc_sentiment_agents.py \
+    BTC_API_URL=http://127.0.0.1:7860 \
+    PORT=7860 \
+    GRADIO_ANALYTICS_ENABLED=False \
+    HF_HOME=/tmp/huggingface \
+    GRADIO_TEMP_DIR=/tmp/gradio
 
-EXPOSE 8000 7860
+# Hugging Face exposes 7860 publicly.
+# Dashboard, FastAPI and Gradio share the same public port.
+EXPOSE 7860
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
-
-CMD ["sh", "-c", "uvicorn app.api:app --host 0.0.0.0 --port ${API_PORT:-8000}"]
+CMD ["python", "-m", "app.space_server"]

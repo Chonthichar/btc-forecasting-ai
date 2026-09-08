@@ -4,9 +4,7 @@ import os
 import gradio as gr
 import requests
 
-API = os.getenv("BTC_API_URL", "http://localhost:8000").rstrip("/")
-PUBLIC_API = os.getenv("BTC_PUBLIC_API_URL", "http://localhost:8000").rstrip("/")
-
+API = os.getenv("BTC_API_URL", "http://127.0.0.1:8000").rstrip("/")
 def dashboard():
     try:
         response = requests.get(f"{API}/forecasts", timeout=15)
@@ -27,7 +25,16 @@ def refresh():
         return "Unable to request a refresh from the forecasting API."
 
 with gr.Blocks(title="BTC Forecasting") as demo:
-    gr.Markdown(f"# BTC Forecasting\n[Open the live monitoring dashboard]({PUBLIC_API}/monitor)")
+    gr.Markdown(
+    """
+    # ₿ BTC Forecasting AI
+
+    **Multi-horizon forecasting • Live market intelligence • AI research**
+
+    Experimental research system — not financial advice.
+    """
+)
+    gr.Markdown(f"[Open the full dashboard and AI Market Analyst]({os.getenv('BTC_PUBLIC_API_URL', '')}/monitor)")
     status = gr.Textbox(value="Connecting to forecasting API…", label="Current forecasts", lines=6)
     gr.Button("Refresh live data").click(refresh, outputs=status)
     gr.Button("Reload forecasts").click(dashboard, outputs=status)
