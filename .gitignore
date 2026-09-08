@@ -1,0 +1,29 @@
+.venv/
+.env
+runtime/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+*.pyo
+*.pyd
+
+runtime/
+logs/
+
+.DS_Store
+Thumbs.db
+
+.ipynb_checkpoints/
+
+# Optional: keep large/raw datasets out of Git
+data/
+*.parquet
+
+# Optional: model artifacts can also be excluded if you prefer Git LFS
+*.pt
+*.pth
+*.joblib
+
+# Docker/local
+docker-compose.override.yml

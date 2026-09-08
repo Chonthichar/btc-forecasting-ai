@@ -1,0 +1,14 @@
+{
+  "selected_by": "mean_cv_f1",
+  "selected_model": "gru",
+  "selected_feature_set": "market_plus_sentiment",
+  "selected_epochs_from_cv_median": 3,
+  "seed": 42,
+  "sequence_length": 48,
+  "final_training_info": {
+    "best_epoch": 3,
+    "epochs_ran": 3,
+    "early_stopping_monitor": "validation_bce_loss",
+    "best_validation_loss": null
+  }
+}

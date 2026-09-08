@@ -1,0 +1,65 @@
+asset: BTC
+cv:
+  gap_hours: 1
+  method: expanding_walk_forward
+  n_splits: 5
+deep_model:
+  dropout: 0.2
+  rnn_hidden: 64
+  transformer_d_model: 64
+  transformer_dropout: 0.15
+  transformer_heads: 4
+  transformer_layers: 2
+  vae_kl_beta: 0.001
+  vae_latent_dim: 24
+  vae_reconstruction_weight: 0.1
+evaluation:
+  metrics:
+  - accuracy
+  - precision
+  - recall
+  - f1
+  - roc_auc
+  - pr_auc
+  - mcc
+  primary_metric: f1
+experiment:
+  end: '2026-09-04'
+  final_test_fraction: 0.15
+  final_test_gap_hours: 1
+  sequence_length: 48
+  start: '2025-09-04'
+  target_column: target_direction_1h
+  target_horizon_hours: 1
+  name: BTC_1h_target1h_sentiment_v4_ablation_200ep
+features:
+  market_set: market_core_v1
+  sentiment_set: sentiment_extended_v2
+interval: 1h
+models:
+  baselines:
+  - logistic_regression
+  - random_forest
+  - hist_gradient_boosting
+  deep:
+  - lstm
+  - gru
+  - vae_transformer
+paths:
+  market: /content/drive/MyDrive/crypto historical 2 year hourly data/data/04_btc_training_ready.parquet
+  output_root: /content/drive/MyDrive/BTC reproducible multimodal pipeline/outputs
+  sentiment: /content/drive/MyDrive/btc sentiment year data/data/04_btc_sentiment_hourly.parquet
+symbol: BTCUSDT
+training:
+  batch_size: 64
+  epochs: 200
+  learning_rate: 0.001
+  min_delta: 0.0001
+  patience: 20
+  seeds:
+  - 42
+  - 123
+  - 456
+  - 789
+  - 2026
+  early_stopping_metric: validation_loss

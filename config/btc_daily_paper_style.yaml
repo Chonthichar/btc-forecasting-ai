@@ -1,0 +1,43 @@
+asset: BTC
+symbol: BTCUSDT
+interval: 1d
+
+paths:
+  market_hourly: "/content/drive/MyDrive/crypto historical 2 year hourly data/data/04_btc_training_ready.parquet"
+  sentiment_daily: "/content/drive/MyDrive/btc sentiment year data/data/05_btc_sentiment_daily.parquet"
+  output_root: "/content/drive/MyDrive/BTC reproducible multimodal pipeline/outputs"
+
+experiment:
+  name: "BTC_daily_paper_style_sentiment_v1"
+  start: "2025-09-04"
+  end: "2026-09-04"
+  final_test_fraction: 0.20
+  final_test_gap_days: 1
+  sequence_length_days: 7
+
+cv:
+  method: expanding_walk_forward
+  n_splits: 5
+  gap_days: 1
+
+training:
+  seed: 42
+  epochs: 200
+  patience: 20
+  min_delta: 0.0001
+  batch_size: 32
+  learning_rate: 0.001
+  gru_hidden: 48
+  dropout: 0.20
+
+models:
+  classification:
+    - logistic_regression
+    - random_forest
+    - hist_gradient_boosting
+    - gru
+  regression:
+    - ridge
+    - random_forest
+    - hist_gradient_boosting
+    - gru

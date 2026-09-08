@@ -1,0 +1,17 @@
+1:
+  kind: vae_transformer_v2
+  feature_set: market_only
+  output_subdir: outputs/BTC_1h_target1h_sentiment_v3_200ep/final_deep__vae_transformer_v2__market_only
+  config: config/btc_1h.yaml
+
+6:
+  kind: gru
+  feature_set: market_plus_sentiment
+  output_subdir: outputs/BTC_1h_target6h_sentiment_v3_200ep/final_deep__gru__market_plus_sentiment
+  config: config/btc_6h.yaml
+
+24:
+  kind: vae_transformer_v2
+  feature_set: market_plus_sentiment
+  output_subdir: outputs/BTC_1h_target24h_sentiment_v3_200ep/final_deep__vae_transformer_v2__market_plus_sentiment
+  config: config/btc_24h.yaml

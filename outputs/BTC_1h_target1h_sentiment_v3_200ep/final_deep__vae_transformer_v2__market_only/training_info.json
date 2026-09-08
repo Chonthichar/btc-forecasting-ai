@@ -1,0 +1,23 @@
+{
+  "selected_by": "mean_cv_f1",
+  "selected_model": "vae_transformer_v2",
+  "selected_feature_set": "market_only",
+  "selected_epochs_from_cv_median": 17,
+  "seed": 42,
+  "sequence_length": 48,
+  "final_training_info": {
+    "best_epoch": 17,
+    "epochs_ran": 17,
+    "train_loss_components_last_epoch": {
+      "classification_loss": 0.6826357219753594,
+      "reconstruction_loss": 0.10539199744254865,
+      "kl_loss": 2.528304223356576
+    },
+    "validation_reconstruction_loss": 0.07987501472234726,
+    "validation_kl_loss": 2.396315336227417,
+    "vae_kl_beta": 0.001,
+    "vae_reconstruction_weight": 0.1,
+    "early_stopping_monitor": "validation_total_vae_loss",
+    "best_validation_loss": null
+  }
+}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Live BTC forecast performance, prediction outcomes, and model health.">
+  <title>BTC Observatory — Model monitoring</title>
+  <link rel="stylesheet" href="/monitor/assets/styles.css">
+  <script src="/monitor/assets/dashboard.js" defer></script>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/monitor"><span class="brand-mark">₿</span><span>BTC Observatory<small>MODEL MONITORING</small></span></a>
+  <div class="workspace"><span class="workspace-icon">B</span><span>Bitcoin forecasting<small>Local deployment</small></span><span class="dot"></span></div>
+  <div class="nav-label">WORKSPACE</div>
+  <nav aria-label="Main navigation">
+    <a class="nav-item active" href="#overview"><span>◫</span> Overview</a>
+    <a class="nav-item" href="#predictions"><span>≡</span> Prediction history</a>
+    <a class="nav-item" href="#health"><span>♡</span> System health</a>
+  </nav>
+  <div class="nav-label model-label">DEPLOYED MODELS <span>03</span></div>
+  <div class="model-nav" aria-label="Forecast horizon">
+    <button class="model-link active" data-horizon="1" aria-pressed="true"><span class="model-dot"></span><span>1 hour<small>VAE-Transformer</small></span><span class="horizon-tag">1H</span></button>
+    <button class="model-link" data-horizon="6" aria-pressed="false"><span class="model-dot"></span><span>6 hours<small>GRU</small></span><span class="horizon-tag">6H</span></button>
+    <button class="model-link" data-horizon="24" aria-pressed="false"><span class="model-dot"></span><span>24 hours<small>VAE-Transformer</small></span><span class="horizon-tag">24H</span></button>
+  </div>
+  <div class="sidebar-bottom"><div class="connection"><span class="dot" id="connection-dot"></span><span id="connection-label">Connecting to API</span></div><a href="/docs" target="_blank" rel="noopener">API documentation <span>↗</span></a><small>UTC timestamps · BTC / USDT</small></div>
+</aside>
+<main id="overview">
+  <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> Models <span>/</span> <b id="crumb">btc-direction-1h</b></div><div class="top-status"><span class="pulse dot"></span> Auto-refresh · 30s</div></header>
+  <section class="page-heading"><div><div class="eyebrow">FORWARD PERFORMANCE</div><h1>Model overview <span class="badge" id="model-badge">COLLECTING</span></h1><p>Every forecast recorded. Every outcome accounted for.</p></div><button class="primary-button" id="refresh-button">↻ <span>Run refresh</span></button></section>
+  <div class="toolbar"><div class="model-description"><strong id="model-name">VAE-Transformer</strong><span class="separator">/</span><span id="feature-set">Market only</span><span class="small-badge" id="horizon-description">1h horizon</span></div><div class="period" aria-label="Accuracy window"><button data-days="7" class="selected" aria-pressed="true">7 days</button><button data-days="30" aria-pressed="false">30 days</button></div></div>
+  <div class="notice" id="notice" role="status" hidden></div>
+  <section class="metrics" aria-label="Model performance metrics">
+    <article class="metric-card"><div class="metric-label">DIRECTIONAL ACCURACY <span>↗</span></div><div class="metric-value cyan" id="accuracy">—</div><div class="metric-detail" id="accuracy-detail">Awaiting outcomes</div><div class="metric-foot" id="baseline-detail">Compared with always predicting UP</div></article>
+    <article class="metric-card"><div class="metric-label">SCORED FORECASTS <span>✓</span></div><div class="metric-value" id="scored">0</div><div class="metric-detail" id="scored-detail">No outcomes scored yet</div><div class="metric-foot">Only finalized target candles count</div></article>
+    <article class="metric-card"><div class="metric-label">PENDING OUTCOMES <span>◷</span></div><div class="metric-value" id="pending">0</div><div class="metric-detail" id="pending-detail">Waiting for the first forecast</div><div class="metric-foot" id="missing-detail">Predictions are saved before evaluation</div></article>
+    <article class="metric-card"><div class="metric-label">BRIER SCORE <span>◎</span></div><div class="metric-value" id="brier">—</div><div class="metric-detail">Probability quality · lower is better</div><div class="metric-foot">0 is perfect · 0.25 for constant 50%</div></article>
+  </section>
+  <section class="chart-grid">
+    <article class="panel performance-panel"><div class="panel-heading"><div><h2>Accuracy over time</h2><p id="chart-description">Trailing 7-day accuracy · scored forecasts only</p></div><span class="subtle-tag">LIVE EVALUATION</span></div><div class="chart-legend"><span><i class="legend-line cyan-line"></i> Model</span><span><i class="legend-line muted-line"></i> Always UP baseline</span></div><div class="chart-wrap"><canvas id="accuracy-chart" aria-label="Rolling model accuracy and always UP baseline" role="img"></canvas><div class="chart-empty" id="chart-empty"><span class="empty-symbol">⌁</span><strong>Good evidence takes time.</strong><p>Your accuracy curve appears as forecasts reach their target time.</p></div></div><div class="chart-footer"><span id="window-note">No historical tests are included in live accuracy.</span><span>UTC</span></div></article>
+    <article class="panel latest-panel"><div class="panel-heading"><div><h2>Latest prediction</h2><p>Original forecast, saved at issue time</p></div><span class="dot" id="latest-dot"></span></div><div id="latest-empty" class="latest-empty"><span class="empty-symbol">↗</span><strong>Ready for the first forecast</strong><p>The hourly worker collects market data and records predictions automatically.</p></div><div id="latest-content" hidden><div class="prediction-direction" id="direction">—</div><div class="probability-heading"><span>Probability of UP</span><b id="probability">—</b></div><div class="probability-track"><div id="probability-fill"></div></div><dl class="prediction-facts"><div><dt>Reference close</dt><dd id="reference-price">—</dd></div><div><dt>Issued at</dt><dd id="issued-at">—</dd></div><div><dt>Outcome due</dt><dd id="target-at">—</dd></div><div><dt>Status</dt><dd id="latest-status">Pending</dd></div></dl></div><div class="model-version"><label for="version-select">Model version</label><select id="version-select"><option value="">Current deployment</option></select></div></article>
+  </section>
+  <section class="panel history-panel" id="predictions"><div class="panel-heading"><div><h2>Prediction history</h2><p>Saved forecasts and their realized outcomes</p></div><select id="status-filter" aria-label="Filter prediction status"><option value="">All outcomes</option><option value="scored">Scored</option><option value="pending">Pending</option><option value="awaiting_market_data">Missing outcome data</option><option value="excluded_late">Excluded: issued too late</option></select></div><div class="table-scroll"><table><thead><tr><th>ISSUED AT · UTC</th><th>PREDICTION</th><th>P(UP)</th><th>REFERENCE CLOSE</th><th>OUTCOME CLOSE</th><th>TARGET TIME · UTC</th><th>RESULT</th></tr></thead><tbody id="history-rows"><tr><td colspan="7"><div class="table-empty">No recorded forecasts yet.<small>New predictions will appear here automatically.</small></div></td></tr></tbody></table></div><div class="table-footer"><span id="history-count">0 forecasts</span><div><button class="text-button" id="previous-page" disabled>← Previous</button><button class="text-button" id="next-page" disabled>Next →</button></div></div></section>
+  <section class="panel health-panel" id="health"><div class="panel-heading"><div><h2>System health</h2><p>Collection, freshness, and the last successful run</p></div><span class="badge" id="worker-badge">WAITING</span></div><div class="health-grid"><div><span>Last successful refresh</span><strong id="last-success">Not yet run</strong></div><div><span>Latest candle close</span><strong id="candle-freshness">Awaiting market data</strong></div><div><span>Last run duration</span><strong id="run-duration">—</strong></div><div><span>Sentiment coverage</span><strong id="sentiment-coverage">Awaiting news collection</strong></div></div><div class="health-message" id="health-message">Monitoring starts automatically and continues while this page is closed.</div><div class="runs" id="recent-runs"></div></section>
+  <footer class="page-footer"><span><span class="dot"></span> Forward monitoring · original predictions preserved</span><span id="last-updated">Connecting…</span></footer>
+</main>
+</body></html>

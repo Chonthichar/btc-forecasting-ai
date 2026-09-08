@@ -1,0 +1,46 @@
+services:
+  btc-api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      API_PORT: "8000"
+      BTC_MONITOR_DB: /app/runtime/monitoring.sqlite3
+    volumes:
+      - ./runtime:/app/runtime
+    restart: unless-stopped
+
+  btc-monitor:
+    build: .
+    command: ["python", "-m", "app.monitor_worker"]
+    environment:
+      BTC_API_URL: http://btc-api:8000
+      MONITOR_USE_GDELT: "true"
+    depends_on:
+      btc-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json,urllib.request; assert json.load(urllib.request.urlopen('http://btc-api:8000/health', timeout=3))['worker_alive']"]
+      start_period: 40s
+    restart: unless-stopped
+
+  btc-ui:
+    build: .
+    command: ["python", "app/app_gradio.py"]
+    ports:
+      - "7860:7860"
+    env_file:
+      - .env
+    environment:
+      PORT: "7860"
+      BTC_API_URL: http://btc-api:8000
+      BTC_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      btc-api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7860/', timeout=3)"]
+    profiles: ["ui"]
