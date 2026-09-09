@@ -17,6 +17,7 @@ RUN pip install -r requirements-agents.txt
 
 COPY --chown=1000:1000 . .
 RUN chown 1000:1000 /app
+RUN python scripts/check_space_bundle.py
 
 ENV BTC_PROJECT_ROOT=/app \
     BTC_SENTIMENT_SCRIPT=/app/sentiment_pipeline/btc_sentiment_agents.py \
@@ -30,4 +31,4 @@ ENV BTC_PROJECT_ROOT=/app \
 # Dashboard, FastAPI and Gradio share the same public port.
 EXPOSE 7860
 
-CMD ["sh", "-c", "uvicorn app.api:app --host 127.0.0.1 --port 8000 & python app/app_gradio.py"]
+CMD ["python", "-m", "app.space_server"]

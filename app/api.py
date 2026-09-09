@@ -10,11 +10,13 @@ from pydantic import BaseModel
 from .monitoring_service import MonitoringService
 
 PROJECT = Path(os.getenv("BTC_PROJECT_ROOT", str(Path(__file__).resolve().parents[1])))
-app = FastAPI(title="BTC Forecasting API", version="1.1.0", description="Live forecasting and durable forward performance monitoring.")
+app = FastAPI(title="BTC Forecasting API", version="1.2.0", description="Live forecasting, durable performance monitoring, and validated AI market research.")
 _assets = Path(__file__).resolve().parent / "static/monitor"
 app.mount("/monitor/assets", StaticFiles(directory=_assets), name="monitor-assets")
 _service = None
 _lock = threading.Lock()
+_analyst = None
+_analyst_lock = threading.Lock()
 
 def get_service():
     global _service
@@ -26,6 +28,19 @@ def get_service():
 
 def get_pipeline():
     return get_service().get_pipeline()
+
+def get_analyst():
+    global _analyst
+    service = get_service()
+    if _analyst is None or _analyst.monitoring is not service:
+        with _analyst_lock:
+            if _analyst is None or _analyst.monitoring is not service:
+                from .agents.orchestrator import AgentOrchestrator
+                _analyst = AgentOrchestrator(service)
+    return _analyst
+
+from .analyst_api import create_analyst_router
+app.include_router(create_analyst_router(get_analyst))
 
 class RefreshRequest(BaseModel):
     use_gdelt: bool = True

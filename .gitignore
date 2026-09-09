@@ -1,5 +1,7 @@
 .venv/
 .env
+.env.*
+!.env.example
 runtime/
 __pycache__/
 *.pyc
@@ -27,3 +29,12 @@ data/
 
 # Docker/local
 docker-compose.override.yml
+
+# Small trained artifacts required by the deployed horizon registry.
+!outputs/BTC_1h_target1h_sentiment_v3_200ep/final_deep__vae_transformer_v2__market_only/market_scaler.joblib
+!outputs/BTC_1h_target1h_sentiment_v3_200ep/final_deep__vae_transformer_v2__market_only/model_state.pt
+!outputs/BTC_1h_target24h_sentiment_v3_200ep/final_deep__vae_transformer_v2__market_plus_sentiment/market_scaler.joblib
+!outputs/BTC_1h_target24h_sentiment_v3_200ep/final_deep__vae_transformer_v2__market_plus_sentiment/model_state.pt
+!outputs/BTC_1h_target24h_sentiment_v3_200ep/final_deep__vae_transformer_v2__market_plus_sentiment/sentiment_scaler.joblib
+!outputs/BTC_1h_target6h_sentiment_v3_200ep/final_deep__gru__market_plus_sentiment/model_state.pt
+!outputs/BTC_1h_target6h_sentiment_v3_200ep/final_deep__gru__market_plus_sentiment/scaler.joblib
