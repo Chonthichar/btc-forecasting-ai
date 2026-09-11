@@ -50,6 +50,8 @@ class ConversationalTests(unittest.TestCase):
                 client, _, _, _ = self.build(llm=PlanStub(plan(text,["1h.raw"])))
                 result = client.post("/chat",json={"message":"Explain 1h forecast"}).json()
                 self.assertEqual(result["llm_status"], "invalid_output")
+                self.assertNotIn("AI answer could not be verified", result["answer"])
+                self.assertTrue(result["answer"].strip())
                 self.assertNotIn("999999", result["answer"])
                 self.assertNotIn("fake.invalid", result["answer"])
                 self.assertNotIn("{{", result["answer"])

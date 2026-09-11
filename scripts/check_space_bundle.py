@@ -11,7 +11,13 @@ def check_bundle(root):
         "app/agents/validation_agent.py", "app/agents/answer_guard.py",
         "app/services/llm_service.py", "app/services/agent_config.py",
         "app/services/tavily_service.py", "app/schemas/agent_models.py",
+        "app/services/reasoning_agents.py", "app/services/research_workflow.py", "app/services/market_decision.py",
+        "app/services/research_triggers.py", "app/services/market_monitoring.py",
+        "app/services/monitoring_events_store.py", "app/services/monitoring_backup.py",
+        "app/services/monitor_schedule.py", "app/services/monitor_worker_runtime.py",
+        "app/static/monitor/monitoring-events.js",
         "app/static/monitor/index.html", "app/static/monitor/analyst.js",
+        "app/static/monitor/market-overview.js", "app/static/monitor/light-overrides.css",
         "app/static/monitor/analyst.css", "app/static/monitor/dashboard.js",
         "app/static/monitor/styles.css", "requirements-agents.txt",
     ]

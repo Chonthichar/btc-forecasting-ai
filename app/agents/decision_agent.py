@@ -56,7 +56,15 @@ class DecisionAgent:
         self.settings, self.validator = settings, validator
         self.llm = llm or LLMService(settings)
 
-    def run(self, question, history, context, research, validation):
+    def run(self, question, history, context, research, validation, structured=False):
+        from app.services.market_decision import enforce_decision
+        plan = None
+        def finish(answer, status, sources):
+            if not structured:
+                return answer, status, sources
+            decision = enforce_decision(context, research, validation, horizons_for(question),
+                proposal=plan.market_decision if plan else None, explanation=answer)
+            return answer, status, sources, decision
         facts = build_facts(context)
         facts["app.llm"] = (f"The Decision Agent is configured to use OpenAI {self.settings.openai_model}."
                             if self.settings.openai_model else "No OpenAI model is configured.")
@@ -103,17 +111,17 @@ class DecisionAgent:
                         if any(not item.recency_verified for item in sources):
                             answer += " Some source publication times are unverified."
                         answer += "\n\nExternal news is context, not a verified cause of the model output or an increase in its reliability."
-                    return redact(answer), llm_status, sources
+                    return finish(redact(answer), llm_status, sources)
             except (ValueError, TypeError):
-                plan, llm_status, message = None, "invalid_output", "The AI answer could not be verified. Showing verified context."
+                plan, llm_status, message = None, "invalid_output", None
         if re.fullmatch(r"\s*(?:hi|hello|hey|thanks|thank you)[!.\s]*", question, re.I):
-            return redact((message + "\n\n" if message else "") + "Hi! I can help explain your BTC forecasts, model reliability, and market news. What would you like to know?"), llm_status, []
+            return finish(redact((message + "\n\n" if message else "") + "Hi! I can help explain your BTC forecasts, model reliability, and market news. What would you like to know?"), llm_status, [])
         if re.search(r"what (?:does|is).*(?:probability|reliability)|explain that|more simply|that difference", question, re.I):
             explanation = facts["concept.probability_up"] + "\n\n" + facts["concept.reliability"]
-            return redact((message + "\n\n" if message else "") + explanation), llm_status, []
+            return finish(redact((message + "\n\n" if message else "") + explanation), llm_status, [])
         if "model.reliability_status" in facts and re.search(r"why.*reliab|reliab.*(?:unknown|missing|unavailable)", question, re.I):
             explanation = facts["model.reliability_status"] + "\n\n" + facts["concept.reliability"]
-            return redact((message + "\n\n" if message else "") + explanation + "\n\nNo reliable forecast right now."), llm_status, []
+            return finish(redact((message + "\n\n" if message else "") + explanation + "\n\nNo reliable forecast right now."), llm_status, [])
         if research.status != "not_requested" and not re.search(r"model|forecast|predict|signal|compare", question, re.I):
             selected = list(research.evidence[:6])
             if validation.mixed_evidence:
@@ -127,7 +135,7 @@ class DecisionAgent:
                 news = "Live web research is currently unavailable. No useful current sources passed validation."
             else:
                 news += "\n\nThese are external news reports, not a verified cause of the model's prediction."
-            return redact((message + "\n\n" if message else "") + news), llm_status, selected
+            return finish(redact((message + "\n\n" if message else "") + news), llm_status, selected)
         plan = plan or fallback
         # User-requested horizons and mandatory reliability notices cannot be
         # omitted or changed by the LLM's selection.
@@ -189,4 +197,4 @@ class DecisionAgent:
             sections.append(conclusion)
         if selected:
             sections.append("Sources:\n" + "\n".join(f"- {e.source} — {e.headline}\n  {e.url}" for e in selected))
-        return redact("\n\n".join(sections)), llm_status, selected
+        return finish(redact("\n\n".join(sections)), llm_status, selected)

@@ -96,7 +96,7 @@ class SDKContractTests(unittest.TestCase):
                 self.assertFalse(runner.call_args.kwargs["run_config"].trace_include_sensitive_data)
         self.assertEqual(status, "ok", message)
         self.assertIsInstance(output, DecisionPlan)
-        self.assertEqual(output.model_dump(), {**selected, "answer": None})
+        self.assertEqual(output.model_dump(), {**selected, "answer": None, "market_decision": None})
         self.assertEqual(len(captured), 1)
         request = captured[0]
         self.assertFalse(request["store"])
@@ -115,7 +115,7 @@ class SDKContractTests(unittest.TestCase):
         self.assertTrue(form["strict"])
         self.assertFalse(form["schema"]["additionalProperties"])
         self.assertEqual(set(form["schema"]["properties"]),
-                         {"focus_horizons", "fact_ids", "evidence_ids", "interpretation", "answer_style", "answer"})
+                         {"focus_horizons", "fact_ids", "evidence_ids", "interpretation", "answer_style", "answer", "market_decision"})
 
     def test_real_sdk_rejects_causal_prose_extra_without_exposing_response_body(self):
         config = settings(openai_key="fixture-key", openai_model="fixture-model")

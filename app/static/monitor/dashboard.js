@@ -15,6 +15,16 @@ function query(history=false){const p=new URLSearchParams({horizon:state.horizon
 async function readJson(url){const r=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(20000)});if(!r.ok)throw new Error('API returned '+r.status);return r.json();}
 
 function renderSummary(data){
+  const q=data.qualification;
+  if(q){
+    setText('qualification-performance','Signal coverage: '+percent(q.signal_coverage)+' | NO_SIGNAL: '+percent(q.no_signal_frequency)+' | UNKNOWN: '+percent(q.unknown_frequency)+' | Qualified accuracy: '+percent(q.qualified_performance.accuracy));
+    const groups=$('qualification-groups');groups.replaceChildren();
+    for(const [label,values] of [['Reliability',q.reliability_buckets],['Regime',q.regimes]]){
+      for(const [key,m] of Object.entries(values)){groups.append(element('span',label+' '+key+': '+percent(m.accuracy)+' accuracy / '+m.scored+' scored'));}
+    }
+    if(q.legacy_unannotated)groups.append(element('span',q.legacy_unannotated+' older forecasts have no saved issue-time gate; excluded from coverage.'));
+  }
+
   const sys=data.system, model=data.model, latest=data.latest;
   setText('crumb','btc-direction-'+state.horizon+'h');
   setText('model-name',modelName(latest?.model || model.model));

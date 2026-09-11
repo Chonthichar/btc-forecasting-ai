@@ -11,6 +11,7 @@ import math
 import re
 import threading
 import time
+import uuid
 import warnings
 from urllib.parse import parse_qsl, unquote, urlencode, urlsplit, urlunsplit
 
@@ -18,6 +19,7 @@ from dateutil import parser as date_parser
 
 from app.schemas.agent_models import EvidenceItem, ResearchResult
 from app.services.tavily_service import TavilyService, prediction_cutoff, unavailable
+from app.services.agent_config import redact_values
 
 PRIMARY = {
     "federalreserve.gov": "Federal Reserve", "sec.gov": "SEC", "treasury.gov": "US Treasury",
@@ -161,15 +163,30 @@ def evidence_category(headline, snippet):
 
 
 class MarketResearchAgent:
-    def __init__(self, settings, tavily=None):
+    def __init__(self, settings, tavily=None, store=None):
         self.settings = settings
         self.tavily = tavily if tavily is not None else TavilyService(settings)
         self._cache = OrderedDict()
         self._inflight = {}
         self._guard = threading.Lock()
+        self.store = store
 
     @staticmethod
-    def query_plan(question, mode="live"):
+    def query_plan(question, mode="live", trigger_types=None):
+        if trigger_types:
+            topics = []
+            rules = {
+                "large_price_move": [TOPICS[2][1], TOPICS[0][1]],
+                "unusual_volatility": [TOPICS[2][1], TOPICS[1][1]],
+                "regime_change": [TOPICS[1][1], TOPICS[2][1]],
+                "sentiment_shift": [TOPICS[0][1], TOPICS[3][1]],
+                "forecast_state_change": [TOPICS[0][1], TOPICS[1][1]],
+            }
+            for reason in trigger_types:
+                for query in rules.get(reason, []):
+                    if query not in topics:
+                        topics.append(query)
+            return ["Bitcoin BTC latest market news price drivers"] + topics[:2]
         text = str(question).lower()[:2000]
         chosen = [query for pattern, query in TOPICS if re.search(pattern, text)][:2]
         for _, query in TOPICS[:2]:
@@ -180,11 +197,19 @@ class MarketResearchAgent:
         prefix = "Bitcoin BTC latest market news price drivers" if mode == "live" else "Bitcoin BTC market news price drivers"
         return [prefix] + chosen
 
-    def _search(self, query, mode, cutoff):
+    def _search(self, query, mode, cutoff, fresh=False):
         key = (query, mode, cutoff.isoformat() if cutoff else None)
+        disk_key = hashlib.sha256(repr((key, self.settings.news_max_age_hours)).encode()).hexdigest()
+        if self.store and not fresh:
+            try:
+                disk = self.store.cache_get(disk_key)
+            except Exception:
+                return {**unavailable("The shared research cache is unavailable."), "retrieved_at": _now()}, False
+            if disk is not None:
+                return disk, True
         with self._guard:
             entry = self._cache.get(key)
-            if entry and entry[0] > time.monotonic():
+            if not fresh and entry and entry[0] > time.monotonic():
                 self._cache.move_to_end(key)
                 return deepcopy(entry[1]), True
             future = self._inflight.get(key)
@@ -197,16 +222,52 @@ class MarketResearchAgent:
                 return deepcopy(future.result(timeout=self.settings.tavily_timeout_seconds * 2 + 5)), True
             except FutureTimeout:
                 return {**unavailable("The shared research request is still in progress."), "retrieved_at": _now()}, False
+        lease_owner = uuid.uuid4().hex
+        if self.store:
+            acquired, disk = False, None
+            try:
+                acquired = self.store.acquire("query:" + disk_key, lease_owner, ttl=self.settings.tavily_timeout_seconds + 30)
+                # Another process may have filled the cache after our first read.
+                if not fresh or not acquired:
+                    disk = self.store.cache_get(disk_key)
+            except Exception:
+                acquired = False
+            if disk is not None or not acquired:
+                payload = disk or {**unavailable("The shared research request is in progress or unavailable."), "retrieved_at": _now()}
+                if acquired:
+                    try:
+                        self.store.release("query:" + disk_key, lease_owner)
+                    except Exception:
+                        pass
+                with self._guard:
+                    self._inflight.pop(key, None)
+                    future.set_result(deepcopy(payload))
+                return payload, True
         try:
             payload = self.tavily.search(query, mode=mode, prediction_timestamp=cutoff)
             if not isinstance(payload, dict) or payload.get("status") not in ("ok", "empty", "unavailable"):
                 payload = unavailable("The news provider returned an invalid response.")
-            payload = {**payload, "retrieved_at": _now()}
+            payload = {**payload, "retrieved_at": _now(), "provider_called": bool(self.settings.tavily_key)}
         except Exception:
-            payload = {**unavailable("The news provider is unavailable."), "retrieved_at": _now()}
+            payload = {**unavailable("The news provider is unavailable."), "retrieved_at": _now(), "provider_called": bool(self.settings.tavily_key)}
         ttl = max(0., self.settings.news_cache_minutes * 60)
         if payload["status"] == "unavailable":
             ttl = min(ttl, 30.)
+        if self.store:
+            try:
+                # Retain bounded snippets only; do not persist whole article bodies.
+                disk_payload = deepcopy(payload)
+                disk_payload["results"] = [{k: (v[:1000] if isinstance(v, str) else v)
+                    for k, v in item.items() if k in {"title", "url", "content", "score", "published_at", "published_date"}}
+                    for item in payload.get("results", [])[:5] if isinstance(item, dict)]
+                self.store.cache_put(disk_key, redact_values(disk_payload), ttl)
+            except Exception:
+                pass  # A cache write failure must not strand in-flight waiters.
+            finally:
+                try:
+                    self.store.release("query:" + disk_key, lease_owner)
+                except Exception:
+                    pass  # The lease expires; waiting callers still receive a result.
         with self._guard:
             self._cache[key] = (time.monotonic() + ttl, deepcopy(payload))
             self._cache.move_to_end(key)
@@ -248,17 +309,20 @@ class MarketResearchAgent:
                             direction=headline_direction(title), category=evidence_category(title, content),
                             source_quality=quality, supports_model_direction=None, recency_verified=False)
 
-    def run(self, question, mode="live", prediction_timestamp=None):
+    def run(self, question, mode="live", prediction_timestamp=None, fresh=False, trigger_types=None, queries=None):
         if mode not in ("live", "historical"):
             return ResearchResult(status="unavailable", reason="Unsupported research mode.")
         cutoff = prediction_cutoff(prediction_timestamp) if mode == "historical" else None
         if mode == "historical" and cutoff is None:
             return ResearchResult(status="unavailable", reason="Historical research requires a timezone-aware prediction timestamp.")
-        queries = self.query_plan(question, mode)
+        queries = self.query_plan(question, mode, trigger_types) if queries is None else queries
+        if not isinstance(queries, list) or not 1 <= len(queries) <= 3 or any(
+                not isinstance(q, str) or not 1 <= len(q.strip()) <= 180 for q in queries):
+            return ResearchResult(status="unavailable", reason="Research query budget or format is invalid.")
         payloads, cached_flags, evidence = [], [], []
         rejected = 0
         for query in queries:
-            payload, cached = self._search(query, mode, cutoff)
+            payload, cached = self._search(query, mode, cutoff, fresh=fresh)
             payloads.append(payload)
             cached_flags.append(cached)
             results = payload.get("results", [])
@@ -294,4 +358,8 @@ class MarketResearchAgent:
         reason = None if unique else ("Focused news research is unavailable." if failures else "No usable news evidence was found.")
         return ResearchResult(status=status, evidence=unique, queries=queries,
                               retrieved_at=max(payload["retrieved_at"] for payload in payloads),
-                              cached=all(cached_flags), reason=reason, warnings=warnings)
+                              cached=all(cached_flags), reason=reason, warnings=warnings,
+                              cached_query_count=sum(cached_flags),
+                              returned_source_count=sum(len(p.get("results", [])[:5]) for p in payloads if isinstance(p.get("results"), list)),
+                              provider_call_count=sum(bool(p.get("provider_called")) and not cached
+                                  for p, cached in zip(payloads, cached_flags)))

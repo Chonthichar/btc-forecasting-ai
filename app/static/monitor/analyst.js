@@ -2,7 +2,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const questions = ['Summarize BTC now', 'Why is BTC moving?', 'Compare 1h / 6h / 24h', 'Explain the 6h forecast', 'What is the current sentiment?', 'Show latest market-moving news', 'Which signal is most reliable?', 'What are the bullish and bearish factors?'];
-  const labels = {forecast:'Forecast', research:'Research', validation:'Validation', decision:'Decision'};
+  const labels = {forecast:'Forecast', research:'Research', review:'Review', validation:'Validation', decision:'Decision'};
   let history = [], busy = false, epoch = 0, periodicBusy = false, modelName = 'OpenAI';
   const percent = value => value == null ? 'Unavailable' : `${(value * 100).toFixed(1)}%`;
   function utc(value) {
@@ -26,7 +26,7 @@
   }
   async function api(path, body) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), body ? 120000 : 15000);
+    const timer = setTimeout(() => controller.abort(), body ? 240000 : 15000);
     try {
       const response = await fetch(path, {method:body ? 'POST' : 'GET', cache:'no-store', signal:controller.signal,
         ...(body ? {headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {})});
@@ -46,7 +46,7 @@
     $('ai-refreshed').textContent = utc(context.last_refresh);
     $('reliability-threshold').textContent = `RELIABILITY THRESHOLD · ${percent(configuration.reliability_threshold)}`;
     modelName = configuration.openai_model || 'OpenAI';
-    $('provider-status').textContent = `${configuration.agent_framework || "OpenAI"} ? ${configuration.openai_configured ? modelName + ' · configured' : 'not configured'} · Tavily ${configuration.tavily_configured ? 'configured' : 'not configured'} · News cache ${configuration.news_cache_minutes} min`;
+    $('provider-status').textContent = `${configuration.agent_framework || "OpenAI"} | ${configuration.openai_configured ? modelName + ' · configured' : 'not configured'} · Tavily ${configuration.tavily_configured ? 'configured' : 'not configured'} · News cache ${configuration.news_cache_minutes} min`;
     $('provider-status').title = 'Keys are read by the API from the local .env file. Configured means present, not yet verified by a provider request.';
     const cards = document.createDocumentFragment();
     for (const horizon of ['1', '6', '24']) {
@@ -77,17 +77,20 @@
     $('evidence-footer').textContent = research.retrieved_at ? `Retrieved ${utc(research.retrieved_at)}. News never increases model reliability.` : 'News never increases model reliability.';
     if (!items.length) {
       const empty = node('div', null, 'evidence-empty');
-      empty.append(node('span','◎'),node('strong',research.status === 'unavailable' ? 'Research unavailable' : 'Follow the evidence.'),
-        node('p',research.status === 'not_requested' ? 'Ask a news question or select Research to fetch current sources. The 30-second dashboard refresh does not trigger paid research.' : research.reason || 'No sufficiently relevant sources passed validation.'));
+      empty.append(node('span','◎'),node('strong',research.status === 'unavailable' ? 'News analysis unavailable' : 'No news analysis yet.'),
+        node('p',research.status === 'not_requested' ? 'Ask a current-news question or refresh this section. The 30-second dashboard update does not call research providers.' : research.reason || 'No sufficiently relevant sources passed validation.'));
       $('evidence-list').replaceChildren(empty); return;
     }
     const fragment = document.createDocumentFragment();
     for (const item of items) {
       const card = node('article', null, 'evidence-item');
-      const tags = node('div', null, 'evidence-tags');
-      tags.append(node('span',item.category.replace('_',' '),'evidence-tag'),node('span',item.direction.toUpperCase(),'evidence-tag ' + item.direction));
+      const top = node('div', null, 'evidence-top');
+      const icon = node('span', item.category.slice(0, 1), 'evidence-icon');
+      const meta = node('div', `${item.source} · ${item.category.replace('_',' ')}`, 'evidence-meta');
+      const stance = node('span', item.direction[0].toUpperCase() + item.direction.slice(1), 'evidence-tag ' + item.direction);
+      top.append(icon, meta, stance);
       const heading = node('h3'); heading.append(link(item.url,item.headline));
-      card.append(tags,heading,node('div',`${item.source} · ${item.source_quality} source\nPublished ${utc(item.published_at)}${item.recency_verified ? '' : ' · time unverified'}`,'evidence-meta'),node('p',item.summary),link(item.url,'Read source ↗','source-link'));
+      card.append(top,heading,node('p',item.summary),node('div',`Published ${utc(item.published_at)}${item.recency_verified ? '' : ' · time unverified'}`,'evidence-time'),link(item.url,'Read analysis →','source-link'));
       fragment.append(card);
     }
     $('evidence-list').replaceChildren(fragment);
@@ -99,6 +102,7 @@
       $('agent-' + key).dataset.state = state;
     }
     if (states.research === 'running') $('chat-status').textContent = 'Tavily is searching current market sources…';
+    else if (states.review === 'running') $('chat-status').textContent = 'Reviewing retrieved sources independently…';
     else if (states.validation === 'running') $('chat-status').textContent = 'Checking forecast values and source quality…';
     else if (states.decision === 'running') $('chat-status').textContent = 'Preparing the answer from validated facts…';
   }
@@ -137,13 +141,15 @@
       finally { polling = false; }
     }, 1100);
     try {
-      const data = await api('/' + kind, kind === 'chat' ? {message:question,history:previous,request_id:requestId} : {question,request_id:requestId});
+      const data = await api('/' + kind, kind === 'chat' ? {message:question,history:previous,request_id:requestId} : {question,request_id:requestId,fresh_research:true});
       if (generation !== epoch) return;
       activity(data.agent_status);
       if (kind === 'chat') {
-        message('assistant',data.answer,data.sources,data.llm_status === 'ok' ? `OPENAI · ${modelName}` : 'FALLBACK · OPENAI ANSWER UNAVAILABLE');
+        const answerLabel = data.llm_status === 'ok' ? `OPENAI · ${modelName}` :
+          data.llm_status === 'invalid_output' ? 'VERIFIED FALLBACK' : 'FALLBACK · OPENAI UNAVAILABLE';
+        message('assistant',data.answer,data.sources,answerLabel);
         history.push({role:'user',content:question},{role:'assistant',content:data.answer}); history = history.slice(-12);
-        $('chat-status').textContent = `${data.llm_status === 'ok' ? 'OpenAI answered' : 'Fallback answer'} · ${data.research_used ? 'Tavily ' + data.research_status : 'no web search needed'}`;
+        $('chat-status').textContent = `${data.llm_status === 'ok' ? 'OpenAI answered' : data.llm_status === 'invalid_output' ? 'Verified fallback shown' : 'OpenAI unavailable · fallback shown'} · ${data.research_used ? 'Tavily ' + data.research_status : 'no web search needed'}`;
       } else { renderEvidence(data.research); $('chat-status').textContent = `Research ${data.research.status} · sources validated`; }
       await refresh();
     } catch (error) {

@@ -6,7 +6,7 @@ from typing import Literal
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from .monitoring_service import MonitoringService
 
 PROJECT = Path(os.getenv("BTC_PROJECT_ROOT", str(Path(__file__).resolve().parents[1])))
@@ -47,9 +47,11 @@ class RefreshRequest(BaseModel):
 
 class MonitoringRunRequest(RefreshRequest):
     trigger: Literal["manual", "hourly"] = "manual"
+    worker_id: str | None = Field(None, pattern=r"^[a-f0-9]{32}$")
 
 class HeartbeatRequest(BaseModel):
     next_run_at: str | None = None
+    worker_id: str | None = Field(None, pattern=r"^[a-f0-9]{32}$")
 
 @app.get("/monitor", include_in_schema=False)
 @app.get("/monitor/", include_in_schema=False)
@@ -132,10 +134,24 @@ def monitoring_run(req: MonitoringRunRequest, tasks: BackgroundTasks, background
     if background:
         if service.system_status()["active_run"]:
             return JSONResponse({"status": "busy", "detail": "A refresh is already running."}, status_code=202)
-        tasks.add_task(service.run, req.trigger, req.use_gdelt)
+        tasks.add_task(service.run, req.trigger, req.use_gdelt, req.worker_id)
         return JSONResponse({"status": "queued"}, status_code=202)
-    return service.run(req.trigger, req.use_gdelt)
+    return service.run(req.trigger, req.use_gdelt, req.worker_id)
 
 @app.post("/monitoring/heartbeat", include_in_schema=False)
 def monitoring_heartbeat(req: HeartbeatRequest):
-    return get_service().heartbeat(req.next_run_at)
+    return get_service().heartbeat(req.next_run_at, req.worker_id)
+
+@app.post("/monitoring/worker/release", include_in_schema=False)
+def release_worker(req: HeartbeatRequest):
+    if req.worker_id:
+        get_service().event_store.release("scheduler", req.worker_id)
+    return {"released": True}
+
+@app.get("/monitoring/activity")
+def monitoring_activity():
+    return get_service().monitoring_activity()
+
+@app.get("/monitoring/scans")
+def monitoring_scans(limit: int = Query(50, ge=1, le=200)):
+    return {"items": get_service().event_store.scans(limit)}

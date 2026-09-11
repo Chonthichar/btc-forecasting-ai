@@ -15,8 +15,17 @@ class SpaceTests(unittest.TestCase):
                 public = create_app()
                 with TestClient(public) as client:
                     self.assertEqual(client.get("/",follow_redirects=False).headers["location"],"/monitor")
-                    self.assertIn("AI Market Analyst",client.get("/monitor").text)
+                    page = client.get("/monitor").text
+                    self.assertIn("AI Market Analyst", page)
+                    self.assertIn("data-asset=\"BTC\"", page)
+                    self.assertIn("data-asset=\"ETH\"", page)
+                    self.assertIn("data-asset=\"ADA\"", page)
+                    self.assertIn("id=\"agent-review\"", page)
+                    self.assertIn("<h1>Market overview</h1>", page)
+                    self.assertIn("<h2>News analysis</h2>", page)
                     self.assertEqual(client.get("/monitor/assets/analyst.js").status_code,200)
+                    self.assertEqual(client.get("/monitor/assets/market-overview.js").status_code,200)
+                    self.assertEqual(client.get("/monitor/assets/light-overrides.css").status_code,200)
                     self.assertEqual(client.get("/context").status_code,200)
                     self.assertEqual(client.get("/health").status_code,200)
                     self.assertEqual(client.get("/gradio/").status_code,200)

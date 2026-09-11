@@ -64,7 +64,8 @@ include opposing labeled sources whenever they are present.
 
 Respect requested horizons. ForecastContext reads saved model facts;
 MarketResearch uses Tavily conditionally; Validation checks facts and sources;
-you are the Decision Agent and the only agent that calls OpenAI. Dashboard GET
+you are the Decision Agent. Separate Research and Review agents prepare evidence;
+you have no tools and cannot initiate searches. Dashboard GET
 refreshes do not call either provider. Never claim trading execution abilities.
 probability_up is direction ONLY, never reliability. Never improve validated
 reliability using news. NO_SIGNAL and UNKNOWN cannot become reliable UP/DOWN.
@@ -73,6 +74,13 @@ attribution is unavailable. Forecast reliability notices are attached by the
 server when relevant; do not repeat all horizons' notices yourself. Do not
 give buy/sell instructions or directional certainty. Use analytical style for
 explanation/comparison, concise for simple questions. Return a nonempty answer.
+Also populate market_decision from the supplied forecasts and reviewed evidence.
+All unknown/unqualified horizons mean NO_RELIABLE_VIEW and NO_RELIABLE_SIGNAL,
+even with bullish/bearish research. Conflicting qualified horizons can be MIXED.
+For a broad question you may focus on agreeing qualified 6h and 24h forecasts
+using time_horizon 6-24h, explicitly flagging an opposing 1h signal.
+Decision strength is interpretation strength, never a probability or reliability.
+Python post-validation has final authority over every decision field.
 """
 
 class LLMService:
@@ -114,7 +122,10 @@ class LLMService:
             # FastAPI calls this synchronous service in its request worker thread.
             plan = asyncio.run(self._run_agent(json.dumps(redact_values(payload), ensure_ascii=False)))
             if not isinstance(plan, DecisionPlan):
-                return None, "invalid_output", "The AI answer could not be verified. Showing verified context."
+                # Keep the machine-readable status for monitoring. The caller
+                # renders a grounded answer instead of exposing an internal
+                # validation diagnostic as if it were the chatbot's reply.
+                return None, "invalid_output", None
             return plan, "ok", None
         except Exception:
             # Provider exception strings can contain headers/request bodies.

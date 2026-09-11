@@ -80,6 +80,12 @@ class ResearchResult(Contract):
     cached: bool = False
     reason: str | None = None
     warnings: list[str] = Field(default_factory=list)
+    review: ReviewReport | None = None
+    workflow: ResearchAudit | None = None
+    market_decision: MarketDecision | None = None
+    provider_call_count: int = 0
+    cached_query_count: int = 0
+    returned_source_count: int = 0
 
 class ValidationResult(Contract):
     context_valid: bool = True
@@ -101,11 +107,13 @@ class SafeChatMessage(Contract):
     content: str = Field(max_length=6000)
 
 class ChatRequest(Contract):
+    fresh_research: bool = False
     message: str = Field(min_length=1, max_length=2000)
     history: list[SafeChatMessage] = Field(default_factory=list, max_length=12)
     request_id: str | None = Field(None, pattern=r"^[a-zA-Z0-9_-]{1,64}$")
 
 class ResearchRequest(Contract):
+    fresh_research: bool = False
     question: str = Field(default="Bitcoin latest market news today", min_length=1, max_length=2000)
     mode: Literal["live", "historical"] = "live"
     prediction_timestamp: datetime | None = None
@@ -115,6 +123,7 @@ class AgentActivity(Contract):
     forecast: Literal["idle", "running", "done", "error"] = "idle"
     research: Literal["idle", "running", "done", "skipped", "unavailable", "error"] = "idle"
     validation: Literal["idle", "running", "done", "error"] = "idle"
+    review: Literal["idle", "running", "done", "unavailable", "error"] = "idle"
     decision: Literal["idle", "running", "done", "unavailable", "error"] = "idle"
 
 class ChatResponse(Contract):
@@ -128,6 +137,7 @@ class ChatResponse(Contract):
     validation: ValidationResult
     llm_status: Literal["ok", "unavailable", "invalid_output"]
     request_id: str
+    market_decision: MarketDecision | None = None
 
 class DecisionPlan(Contract):
     """A conversational answer with verifiable references to supplied facts."""
@@ -137,3 +147,84 @@ class DecisionPlan(Contract):
     interpretation: Literal["mixed_context", "bullish_context", "bearish_context", "neutral_context", "model_only", "insufficient_evidence"]
     answer_style: Literal["concise", "analytical"]
     answer: str | None = Field(None, max_length=7000)
+    market_decision: DecisionProposal | None = None
+
+
+class ResearchPlan(Contract):
+    evidence_ids: list[str] = Field(max_length=15)
+    research_summary: str = Field(max_length=1200)
+
+
+class EvidenceReview(Contract):
+    evidence_id: str = Field(max_length=120)
+    accept: bool
+    stance: Literal["BULLISH", "BEARISH", "NEUTRAL"]
+    reason: str = Field(max_length=400)
+
+
+class ReviewPlan(Contract):
+    assessments: list[EvidenceReview] = Field(max_length=15)
+    contradictions: list[str] = Field(max_length=10)
+    unsupported_claims: list[str] = Field(max_length=10)
+    review_summary: str = Field(max_length=1200)
+    additional_research_needed: bool
+
+
+class ReviewReport(Contract):
+    status: Literal["ok", "unavailable", "invalid_output"]
+    accepted_evidence: list[str] = Field(default_factory=list)
+    rejected_evidence: list[str] = Field(default_factory=list)
+    bullish_count: int = 0
+    bearish_count: int = 0
+    neutral_count: int = 0
+    mixed_evidence: bool = False
+    evidence_quality: Literal["HIGH", "MEDIUM", "LOW", "NONE"] = "NONE"
+    contradictions: list[str] = Field(default_factory=list)
+    unsupported_claims: list[str] = Field(default_factory=list)
+    review_summary: str = ""
+    additional_research_needed: bool = False
+
+
+class DecisionProposal(Contract):
+    market_stance: Literal["BULLISH", "BEARISH", "MIXED", "NO_RELIABLE_VIEW"]
+    decision_strength: Literal["LOW", "MODERATE", "HIGH"]
+    time_horizon: Literal["1h", "6h", "24h", "6-24h", "mixed"]
+    ml_view: Literal["BULLISH", "BEARISH", "MIXED", "NO_RELIABLE_SIGNAL"]
+    research_view: Literal["BULLISH", "BEARISH", "NEUTRAL", "MIXED", "NO_EVIDENCE"]
+    agreement: bool
+    short_term_risk: str = Field(max_length=600)
+    explanation: str = Field(max_length=7000)
+    evidence_ids: list[str] = Field(max_length=15)
+
+
+class MarketDecision(DecisionProposal):
+    generated_at: str
+    context_timestamp: str | None = None
+    signal_states: dict[str, SignalState] = Field(default_factory=dict)
+    reliability_enforced: bool = True
+
+
+class ResearchAudit(Contract):
+    event_id: str | None = None
+    timestamp: str
+    trigger_reason: list[str] = Field(default_factory=list)
+    user_requested: bool = False
+    mode: Literal["live", "historical"] = "live"
+    tavily_called: bool = False
+    cache_used: bool = False
+    queries_used: list[str] = Field(default_factory=list)
+    returned_sources: int = 0
+    accepted_sources: int = 0
+    rejected_sources: int = 0
+    research_agent_executed: bool = False
+    review_agent_executed: bool = False
+    decision_agent_executed: bool = False
+    final_market_stance: str | None = None
+    decision_strength: str | None = None
+    final_signal_states: dict[str, SignalState] = Field(default_factory=dict)
+    errors: list[str] = Field(default_factory=list)
+
+
+ResearchResult.model_rebuild()
+ChatResponse.model_rebuild()
+DecisionPlan.model_rebuild()

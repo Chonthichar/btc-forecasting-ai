@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "BTC Forecasting AI",
+    "slug": "btc-forecasting-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "btcforecasting",
+
+    "ios": {
+      "bundleIdentifier": "com.chonthichar.btcforecastingai",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+
+    "android": {
+      "package": "com.chonthichar.btcforecastingai"
+    },
+
+    "web": {
+      "output": "static",
+      "bundler": "metro"
+    },
+
+    "plugins": [
+      "expo-router"
+    ],
+
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "80c8740e-9d60-4da6-9917-76e5fe082bd5"
+      }
+    }
+  }
+}

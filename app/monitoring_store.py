@@ -93,6 +93,11 @@ class MonitoringStore:
                 CREATE TABLE IF NOT EXISTS worker_lock (
                     id INTEGER PRIMARY KEY CHECK(id = 1), owner TEXT NOT NULL, expires_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS forecast_annotations (
+                    forecast_id INTEGER PRIMARY KEY, reliability REAL,
+                    signal_state TEXT NOT NULL, regime TEXT,
+                    FOREIGN KEY(forecast_id) REFERENCES forecasts(id)
+                );
             """)
 
     @contextmanager
@@ -126,7 +131,7 @@ class MonitoringStore:
     def latest_snapshot(self):
         return self.get_state("latest_snapshot")
 
-    def record_forecasts(self, forecasts, issued_at=None):
+    def record_forecasts(self, forecasts, issued_at=None, context_by_horizon=None, regime=None):
         issued = _utc(issued_at)
         rows = []
         for key, forecast in forecasts.items():
@@ -163,6 +168,10 @@ class MonitoringStore:
                      model,feature_set,status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                      ON CONFLICT(asset,model_version,horizon,origin_open) DO NOTHING""", row)
                 if cursor.rowcount:
+                    context = (context_by_horizon or {}).get(str(row[2]))
+                    if context is not None:
+                        db.execute("INSERT INTO forecast_annotations VALUES(?,?,?,?)",
+                                   (cursor.lastrowid, context.get("reliability"), context.get("signal_state", "UNKNOWN"), regime))
                     result["inserted"] += 1
                     result[row[-1]] += 1
                 else:
@@ -311,7 +320,7 @@ class MonitoringStore:
                                     "AND issued_at<=? ORDER BY issued_at DESC,id DESC LIMIT 1",
                                     (horizon, _iso(current))).fetchone()
                 model_version = latest[0] if latest else None
-            rows = db.execute("SELECT * FROM forecasts WHERE horizon=? AND model_version=? "
+            rows = db.execute("SELECT f.*,a.reliability,a.signal_state,a.regime FROM forecasts f LEFT JOIN forecast_annotations a ON a.forecast_id=f.id WHERE horizon=? AND model_version=? "
                               "AND issued_at>=? AND issued_at<=? ORDER BY issued_at",
                               (horizon, model_version, _iso(cutoff - timedelta(days=days)),
                                _iso(current))).fetchall()
@@ -327,7 +336,29 @@ class MonitoringStore:
                            **self._metrics(subset, end)})
         return {"horizon": horizon, "days": days, "model_version": model_version,
                 "as_of": _iso(current), "window_start": _iso(cutoff),
-                **self._metrics(in_window, current), "series": series}
+                **self._metrics(in_window, current), "series": series,
+                "qualification": self._qualification(in_window, current)}
+
+    @classmethod
+    def _qualification(cls, rows, now):
+        # Legacy forecasts have NULL annotations; never backfill issue-time gates.
+        annotated = [r for r in rows if r["signal_state"] is not None and r["status"] != "excluded_late"]
+        qualified = [r for r in annotated if r["signal_state"] in {"UP", "DOWN"}]
+        def grouped(field):
+            groups = {}
+            for row in annotated:
+                value = row[field]
+                if field == "reliability":
+                    value = "unavailable" if value is None else "0.00-0.49" if value < .5 else "0.50-0.74" if value < .75 else "0.75-1.00"
+                groups.setdefault(value or "unavailable", []).append(row)
+            return {key: cls._metrics(items, now) for key, items in groups.items()}
+        n = len(annotated)
+        return {"annotated_forecasts": n, "legacy_unannotated": sum(r["signal_state"] is None for r in rows),
+                "signal_coverage": len(qualified) / n if n else None,
+                "no_signal_frequency": sum(r["signal_state"] == "NO_SIGNAL" for r in annotated) / n if n else None,
+                "unknown_frequency": sum(r["signal_state"] == "UNKNOWN" for r in annotated) / n if n else None,
+                "qualified_performance": cls._metrics(qualified, now),
+                "reliability_buckets": grouped("reliability"), "regimes": grouped("regime")}
 
     def latest_forecasts(self):
         snapshot = self.latest_snapshot()

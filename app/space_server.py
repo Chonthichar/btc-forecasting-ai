@@ -22,7 +22,7 @@ def create_app():
         worker = None
         if os.getenv("SPACE_START_MONITOR", "true").lower() == "true":
             env = dict(os.environ, BTC_API_URL=local_api)
-            for key in ("OPENAI_API_KEY", "TAVILY_API_KEY", "ALPHA_VANTAGE_API_KEY"):
+            for key in ("OPENAI_API_KEY", "TAVILY_API_KEY", "ALPHA_VANTAGE_API_KEY", "MONITOR_BACKUP_TOKEN", "HF_TOKEN", "HUGGINGFACEHUB_API_TOKEN"):
                 env.pop(key, None)
             worker = subprocess.Popen([sys.executable, "-m", "app.monitor_worker"], env=env)
         try:

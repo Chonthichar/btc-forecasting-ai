@@ -30,6 +30,8 @@ class SentimentAgent:
             cmd.append("--skip-gdelt")
 
         env = os.environ.copy()
+        for key in ("MONITOR_BACKUP_TOKEN", "HF_TOKEN", "HUGGINGFACEHUB_API_TOKEN"):
+            env.pop(key, None)
         if self.alpha_vantage_key:
             env["ALPHA_VANTAGE_API_KEY"] = self.alpha_vantage_key
 
