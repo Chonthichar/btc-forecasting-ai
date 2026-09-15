@@ -1,7 +1,9 @@
 pandas>=2.2
 numpy>=1.26
 pyarrow>=15
-scikit-learn>=1.4
+# Pinned: the deployed risk scalers and logistic models were pickled with 1.6.1.
+# A different minor version can change StandardScaler internals and shift scores silently.
+scikit-learn==1.6.1
 joblib>=1.3
 pyyaml>=6.0
 torch>=2.2

@@ -22,10 +22,17 @@ Thumbs.db
 data/
 *.parquet
 
-# Optional: model artifacts can also be excluded if you prefer Git LFS
-*.pt
-*.pth
-*.joblib
+# Training artifacts under outputs/ are not committed; the specific files the
+# deployed registry needs are un-ignored further down.
+#
+# Scoped to outputs/ rather than a blanket *.pt / *.joblib on purpose: the
+# Hugging Face uploader applies .gitignore but does NOT honour negation lines,
+# so a blanket rule silently dropped every model binary from the Space while
+# reporting a successful commit. Keeping the pattern narrow means the
+# deployment artifacts never match it and need no negation.
+outputs/**/*.pt
+outputs/**/*.pth
+outputs/**/*.joblib
 
 # Docker/local
 docker-compose.override.yml

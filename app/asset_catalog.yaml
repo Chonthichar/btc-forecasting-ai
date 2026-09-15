@@ -1,0 +1,35 @@
+# Assets in the thesis scope.
+#
+# Listing a coin here does NOT make it forecastable. An asset only reports
+# deployed: true from /assets when trained artifacts are actually registered in
+# deployment_registry.yaml and loaded at start-up, so a planned coin can never
+# present itself as a live model.
+#
+# To bring ETH or ADA online: collect its Binance history, train the 1h, 6h and
+# 24h horizons with run_horizon_suite.py, register the artifacts in
+# deployment_registry.yaml, then set deployed_asset accordingly. The dashboard
+# reads this file, so no interface change is needed.
+
+deployed_asset: BTC
+
+assets:
+  BTC:
+    name: Bitcoin
+    pair: BTC / USDT
+    symbol: BTCUSDT
+  ETH:
+    name: Ethereum
+    pair: ETH / USDT
+    symbol: ETHUSDT
+    requires: >-
+      Binance ETHUSDT history, a training run for each horizon, and registered
+      artifacts. The Bitcoin sentiment corpus does not transfer, so the first
+      Ethereum models would be market-only.
+  ADA:
+    name: Cardano
+    pair: ADA / USDT
+    symbol: ADAUSDT
+    requires: >-
+      Binance ADAUSDT history, a training run for each horizon, and registered
+      artifacts. The Bitcoin sentiment corpus does not transfer, so the first
+      Cardano models would be market-only.

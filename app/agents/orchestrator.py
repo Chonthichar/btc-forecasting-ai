@@ -63,6 +63,20 @@ class AgentOrchestrator:
         states = self.activity(request_id)["agent_status"]
         self._set(request_id, **{key: "error" for key, value in states.items() if value == "running"})
 
+    def deployment_predictions(self):
+        """The six frozen-model outputs, for the LLM to explain.
+
+        Never fatal: the analyst can still answer about market context if the
+        deployment models are unavailable, it simply has no scores to cite.
+        """
+        try:
+            from app.forecasting.service import DeploymentPredictionService
+            if getattr(self, "_deployment", None) is None:
+                self._deployment = DeploymentPredictionService(self.monitoring.root)
+            return self._deployment.current()
+        except Exception:
+            return None
+
     def context(self):
         snapshot = copy.deepcopy(self.monitoring.snapshot())
         context = self.forecast_agent.run(snapshot)
@@ -117,7 +131,7 @@ class AgentOrchestrator:
         executed = False
         if any(e.recency_verified and e.source_quality != "unverified" for e in research.evidence):
             self._set(request_id, decision="running")
-            _, llm_status, _, decision = self.decision_agent.run(request.question, [], context, research, validation, structured=True)
+            _, llm_status, _, decision = self.decision_agent.run(request.question, [], context, research, validation, structured=True, predictions=self.deployment_predictions())
             executed = bool(self.settings.openai_key and self.settings.openai_model)
             self._set(request_id, decision="done" if llm_status == "ok" else "unavailable")
             if research.workflow and llm_status != "ok":
@@ -162,7 +176,7 @@ class AgentOrchestrator:
                 if getattr(self.monitoring, "event_store", None):
                     self.monitoring.store.set_state("analyst_evidence", research.model_dump())
             self._set(request_id, validation="done", decision="running")
-            answer, llm_status, sources, decision = self.decision_agent.run(question, history, context, research, validation, structured=True)
+            answer, llm_status, sources, decision = self.decision_agent.run(question, history, context, research, validation, structured=True, predictions=self.deployment_predictions())
             research.market_decision = decision
             if research.workflow and llm_status != "ok":
                 research.workflow.errors.append("Decision Agent " + llm_status)

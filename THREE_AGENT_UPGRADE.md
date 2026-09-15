@@ -202,3 +202,13 @@ The follow-up layout at Space commit `1e7903cd5635640ac3a2be80b5829db90739b0fd` 
 ### Research sidebar restoration — 2026-09-10
 
 Space commit `4a2b3992ffcbc27f933b4c896e86a4c5b81b520e` restores a compact light sidebar with Overview, News analysis, AI assistant, About the framework and Thesis prototype navigation. It also includes the research-purpose card, workspace identity, live API indicator, active-section tracking and a compact horizontal navigation mode below 900px. A live 1536 × 768 render confirmed the sidebar and complete chat composer fit together. Hosted health is `ok` and the forecast worker remains alive.
+
+### Workspace layout and navigation — 2026-09-11
+
+UI commit `96d58daec4791330d198bbf990e41453c8a58395` fixes the original navigation-label defect: the inherited `.nav-item > span` icon rule assigned 18px width and 17px text to every label. The scoped workspace stylesheet resets both properties and provides readable 13px labels in a branded sidebar. Twelve links map to Overview, News analysis, AI assistant, Forecast chart, Market activity, Event context, Model performance, Signal reliability, Prediction history, System health, About the framework and Thesis prototype. The two research links now lead to dedicated explanatory sections; API documentation has its own clearly named link. Monitoring horizon controls are restored.
+
+The analyst uses the light workspace palette, a viewport-aware desktop height, a scrollable conversation and a fixed composer. Clearing chat restores the welcome view. Narrow screens use a collapsible menu with every navigation option available and an inline analyst panel. Navigation supports active state, breadcrumbs, keyboard focus and browser Back.
+
+The browser regression script `scripts/check_workspace_ui.cjs` checks all twelve links and label geometry at 1536×900, 1280×720, 1280×500, 1024×768 and 390×844. It also checks browser Back, mobile menu closure, long replies, composer visibility, page overflow and chat clearing. Pre-deployment checks passed with zero browser JavaScript errors. Chat POSTs were intercepted with explicitly labeled test responses; no AI-provider requests were made by these tests. Screenshots are in `ui-verification/`. Original production UI files are backed up in `workspace-ui-backup-20260911/`.
+
+The same browser checks passed against the deployed assets at all five viewport sizes. Final hosted verification confirms commit `96d58daec4791330d198bbf990e41453c8a58395`, Space stage `RUNNING`, API health `ok`, and worker alive.

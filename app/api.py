@@ -1,11 +1,14 @@
 from __future__ import annotations
+import hashlib
 import os
+import re
 import threading
 from pathlib import Path
 from typing import Literal
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+import yaml
 from pydantic import BaseModel, Field
 from .monitoring_service import MonitoringService
 
@@ -17,6 +20,11 @@ _service = None
 _lock = threading.Lock()
 _analyst = None
 _analyst_lock = threading.Lock()
+_catalog = None
+_assets_version = None
+_ticker = None
+_predictions = None
+_predictions_lock = threading.Lock()
 
 def get_service():
     global _service
@@ -53,10 +61,29 @@ class HeartbeatRequest(BaseModel):
     next_run_at: str | None = None
     worker_id: str | None = Field(None, pattern=r"^[a-f0-9]{32}$")
 
+def _asset_version():
+    """Fingerprint of the dashboard's own JS and CSS. Stamped into the asset
+    URLs so a browser cannot keep serving a previous build from cache: the URL
+    itself changes whenever the content does. Hand-edited version strings were
+    forgotten between deploys, which left visitors on stale assets."""
+    global _assets_version
+    if _assets_version is None:
+        digest = hashlib.sha256()
+        for path in sorted(_assets.glob("*")):
+            if path.suffix in {".js", ".css"}:
+                digest.update(path.name.encode())
+                digest.update(path.read_bytes())
+        _assets_version = digest.hexdigest()[:12]
+    return _assets_version
+
 @app.get("/monitor", include_in_schema=False)
 @app.get("/monitor/", include_in_schema=False)
 def dashboard():
-    return FileResponse(_assets / "index.html", headers={"Cache-Control": "no-cache"})
+    page = (_assets / "index.html").read_text(encoding="utf-8")
+    # The trailing guard keeps manifest.json from matching as manifest.js.
+    page = re.sub(r"(?<=/monitor/assets/)([\w.-]+\.(?:js|css))(?!\w)(\?v=[^\"']*)?",
+                  lambda m: f"{m.group(1)}?v={_asset_version()}", page)
+    return HTMLResponse(page, headers={"Cache-Control": "no-cache"})
 
 @app.get("/")
 def root():
@@ -110,6 +137,71 @@ def sentiment():
 @app.get("/system")
 def system():
     return {"deployed_models": get_service().models, "monitoring": get_service().system_status()}
+
+def _load_catalog():
+    global _catalog
+    if _catalog is None:
+        _catalog = yaml.safe_load((PROJECT / "app/asset_catalog.yaml").read_text(encoding="utf-8"))
+    return _catalog
+
+@app.get("/prices")
+def prices():
+    """Spot quotes for the asset switcher. Quotes only: a price here does not
+    imply that the asset has a deployed model."""
+    global _ticker
+    if _ticker is None:
+        from .services.price_ticker import PriceTicker
+        _ticker = PriceTicker()
+    catalog = _load_catalog()
+    entries = (catalog.get("assets") or {})
+    quotes = _ticker.quotes([entry.get("symbol") for entry in entries.values()])
+    return {"prices": {str(code).strip().upper(): {
+                "price": (quotes.get(entry.get("symbol")) or {}).get("price"),
+                "change_24h": (quotes.get(entry.get("symbol")) or {}).get("change_24h")}
+            for code, entry in entries.items()}}
+
+@app.get("/assets")
+def assets():
+    """Thesis asset scope. An asset is only reported as deployed when trained
+    artifacts for it were actually loaded, so a planned coin cannot advertise
+    itself as a live model."""
+    _catalog = _load_catalog()
+    horizons = sorted(get_service().models)
+    deployed_code = str(_catalog.get("deployed_asset", "")).strip().upper()
+    items = []
+    for code, entry in (_catalog.get("assets") or {}).items():
+        code = str(code).strip().upper()
+        live = bool(horizons) and code == deployed_code
+        items.append({"code": code, "name": entry.get("name"), "pair": entry.get("pair"),
+                      "symbol": entry.get("symbol"), "deployed": live,
+                      "horizons": horizons if live else [], "requires": entry.get("requires")})
+    return {"assets": items}
+
+def get_predictions_service():
+    """Lazy: importing torch and scikit-learn is expensive, and the dashboard
+    must still serve monitoring pages if the deployment models are absent."""
+    global _predictions
+    if _predictions is None:
+        with _predictions_lock:
+            if _predictions is None:
+                from .forecasting.service import DeploymentPredictionService
+                _predictions = DeploymentPredictionService(PROJECT)
+    return _predictions
+
+@app.get("/predictions")
+def predictions(refresh: bool = False):
+    """All six frozen-model outputs for the latest closed candle.
+
+    Risk is a two-sided +/-2.5% barrier-touch score, not a crash probability;
+    direction scores are model scores, not calibrated probabilities."""
+    from .forecasting.feature_builder import FeatureError
+    try:
+        return get_predictions_service().current(refresh=refresh)
+    except FeatureError as exc:
+        # Brief section 12: refuse rather than predict on unusable data.
+        raise HTTPException(503, f"Live data cannot support a prediction: {exc}") from None
+    except FileNotFoundError as exc:
+        raise HTTPException(503, f"Deployment model artifact missing: {exc}") from None
 
 @app.get("/monitoring/summary")
 def monitoring_summary(horizon: int = 1, days: int = 7, model_version: str | None = Query(None, max_length=100)):

@@ -1,9 +1,11 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const questions = ['Summarize BTC now', 'Why is BTC moving?', 'Compare 1h / 6h / 24h', 'Explain the 6h forecast', 'What is the current sentiment?', 'Show latest market-moving news', 'Which signal is most reliable?', 'What are the bullish and bearish factors?'];
+  const store = window.CryptoLens;
+  const questions =['Summarize BTC now', 'Why is BTC moving?', 'Compare 1h / 6h / 24h', 'Explain the 6h forecast', 'What is the current sentiment?', 'Show latest market-moving news', 'Which signal is most reliable?', 'What are the bullish and bearish factors?'];
   const labels = {forecast:'Forecast', research:'Research', review:'Review', validation:'Validation', decision:'Decision'};
   let history = [], busy = false, epoch = 0, periodicBusy = false, modelName = 'OpenAI';
+  const welcome = document.querySelector('.chat-welcome').cloneNode(true);
   const percent = value => value == null ? 'Unavailable' : `${(value * 100).toFixed(1)}%`;
   function utc(value) {
     if (!value || !Number.isFinite(Date.parse(value))) return 'Unavailable';
@@ -34,6 +36,10 @@
       return await response.json();
     } finally { clearTimeout(timer); }
   }
+  const horizonLabel = horizon => horizon === '1' ? '1 hour' : `${horizon} hours`;
+
+
+
   function renderContext(payload) {
     const context = payload.context, configuration = payload.configuration;
     $('market-live').textContent = context.data_fresh === true ? '● LIVE' : '○ OFFLINE';
@@ -44,32 +50,28 @@
     $('ai-regime').textContent = context.market.regime || 'Not provided';
     $('ai-sentiment').textContent = context.sentiment.label || (context.sentiment.score == null ? 'Not provided' : `Score ${context.sentiment.score.toFixed(3)}`);
     $('ai-refreshed').textContent = utc(context.last_refresh);
-    $('reliability-threshold').textContent = `RELIABILITY THRESHOLD · ${percent(configuration.reliability_threshold)}`;
-    modelName = configuration.openai_model || 'OpenAI';
-    $('provider-status').textContent = `${configuration.agent_framework || "OpenAI"} | ${configuration.openai_configured ? modelName + ' · configured' : 'not configured'} · Tavily ${configuration.tavily_configured ? 'configured' : 'not configured'} · News cache ${configuration.news_cache_minutes} min`;
-    $('provider-status').title = 'Keys are read by the API from the local .env file. Configured means present, not yet verified by a provider request.';
-    const cards = document.createDocumentFragment();
-    for (const horizon of ['1', '6', '24']) {
-      const forecast = context.forecasts[horizon];
-      const state = forecast?.signal_state || 'UNKNOWN';
-      const qualified = ['UP','DOWN'].includes(state);
-      const card = node('article', null, 'signal-card' + (qualified ? ' qualified-' + state.toLowerCase() : ''));
-      const top = node('div', null, 'signal-card-top');
-      top.append(node('span', `${horizon} ${horizon === '1' ? 'HOUR' : 'HOURS'}`), node('span', state.replace('_', ' '), 'signal-state'));
-      card.append(top, node('h3', qualified ? `${state === 'UP' ? '↗' : '↘'} ${state}` : '— No reliable forecast', 'signal-title'),
-        node('p', forecast?.reliability_reason || 'No saved forecast is available.', 'signal-reason'));
-      const numbers = node('div', null, 'signal-numbers');
-      for (const [title,value] of [['Probability of UP',percent(forecast?.probability_up)], ['Validated reliability',percent(forecast?.reliability)]]) {
-        const metric = node('div'); metric.append(node('span',title),node('strong',value)); numbers.append(metric);
-      }
-      const facts = node('dl', null, 'signal-facts');
-      for (const [title,value] of [['Raw lean',forecast?.raw_direction],['Model',forecast?.model],['Features',forecast?.feature_set],['Regime',forecast?.regime || context.market.regime],['Last update',utc(forecast?.model_timestamp)]]) {
-        const row = node('div'); row.append(node('dt',title),node('dd',value || 'Unavailable')); facts.append(row);
-      }
-      card.append(numbers,facts); cards.append(card);
+    if (payload.degraded) {
+      $('reliability-threshold').textContent = 'RELIABILITY GATE · UNAVAILABLE';
+      $('provider-status').textContent = 'The analyst service is unavailable. Saved forecasts and monitoring are unaffected.';
+    } else {
+      // A threshold implies a gate that can fire. With no reliability model
+      // deployed every horizon reports null, so say that instead.
+      const gated = Object.values(context.forecasts || {}).some(entry => entry?.reliability != null);
+      $('reliability-threshold').textContent = gated
+        ? `RELIABILITY GATE · ${percent(configuration.reliability_threshold)}`
+        : 'RELIABILITY GATE · NOT DEPLOYED';
+      $('reliability-threshold').title = gated
+        ? 'A forecast is only issued as a signal when its validated reliability clears this threshold.'
+        : 'No model produces a reliability score yet, so no forecast can be qualified as a signal.';
+      modelName = configuration.openai_model || 'OpenAI';
+      $('provider-status').textContent = `${configuration.agent_framework || "OpenAI"} | ${configuration.openai_configured ? modelName + ' · configured' : 'not configured'} · Tavily ${configuration.tavily_configured ? 'configured' : 'not configured'} · News cache ${configuration.news_cache_minutes} min`;
+      $('provider-status').title = 'Keys are read by the API from the local .env file. Configured means present, not yet verified by a provider request.';
     }
-    $('forecast-cards').replaceChildren(cards);
-    $('signal-note').textContent = context.warnings.length ? context.warnings.join(' ') : 'Qualified signals remain uncertain. External news does not increase model reliability.';
+  }
+
+  function contextUnavailable() {
+    $('market-live').textContent = '○ OFFLINE';
+    $('market-live').className = 'live-state';
   }
   function renderEvidence(research) {
     const items = research.evidence || [];
@@ -98,8 +100,14 @@
   function activity(states = {}) {
     for (const [key,label] of Object.entries(labels)) {
       const state = states[key] || 'idle';
-      $('agent-' + key).textContent = `${label} · ${state}`;
-      $('agent-' + key).dataset.state = state;
+      const node = $('agent-' + key);
+      node.dataset.state = state;
+      node.querySelector('.agent-state').textContent = state;
+      node.setAttribute('aria-label', `${label}: ${state}`);
+      // The connector feeding a node carries that node's state, so the line
+      // animates while the stage it leads into is working.
+      const link = node.previousElementSibling;
+      if (link && link.classList.contains('agent-link')) link.dataset.state = state;
     }
     if (states.research === 'running') $('chat-status').textContent = 'Tavily is searching current market sources…';
     else if (states.review === 'running') $('chat-status').textContent = 'Reviewing retrieved sources independently…';
@@ -152,6 +160,7 @@
         $('chat-status').textContent = `${data.llm_status === 'ok' ? 'OpenAI answered' : data.llm_status === 'invalid_output' ? 'Verified fallback shown' : 'OpenAI unavailable · fallback shown'} · ${data.research_used ? 'Tavily ' + data.research_status : 'no web search needed'}`;
       } else { renderEvidence(data.research); $('chat-status').textContent = `Research ${data.research.status} · sources validated`; }
       await refresh();
+      store.refreshContext();
     } catch (error) {
       if (generation !== epoch) return;
       const explanation = error.name === 'AbortError' ? 'The request timed out. Please try again shortly.' : 'The analyst request could not be completed. Check API health and retry.';
@@ -163,23 +172,9 @@
   async function refresh() {
     if (periodicBusy) return;
     periodicBusy = true;
-    try {
-      const results = await Promise.allSettled([api('/context'),api('/evidence')]);
-      if (results[0].status === 'fulfilled') renderContext(results[0].value);
-      else {
-        $('market-live').textContent = '○ OFFLINE'; $('market-live').className = 'live-state';
-        $('signal-note').textContent = 'API unavailable. Displayed values are the last retrieved snapshot and may be stale.';
-        $('forecast-cards').querySelectorAll('.signal-card').forEach(card => {
-          card.classList.remove('qualified-up','qualified-down');
-          const title = card.querySelector('.signal-title'), badge = card.querySelector('.signal-state'), reason = card.querySelector('.signal-reason');
-          if (title) title.textContent = '— No reliable forecast';
-          if (badge) badge.textContent = 'UNKNOWN';
-          if (reason) reason.textContent = 'API unavailable; current forecast freshness cannot be confirmed.';
-        });
-      }
-      if (results[1].status === 'fulfilled') renderEvidence(results[1].value);
-      else $('evidence-status').textContent = 'Evidence service unavailable · previous sources may be stale';
-    } finally { periodicBusy = false; }
+    try { renderEvidence(await api('/evidence')); }
+    catch { $('evidence-status').textContent = 'Evidence service unavailable · previous sources may be stale'; }
+    finally { periodicBusy = false; }
   }
   for (const question of questions) {
     const button = node('button',question); button.type = 'button'; button.addEventListener('click',() => run('chat',question)); $('quick-questions').append(button);
@@ -187,7 +182,10 @@
   $('chat-form').addEventListener('submit',event => { event.preventDefault(); const question = $('chat-input').value.trim(); if (question) run('chat',question); });
   $('chat-input').addEventListener('keydown',event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); $('chat-form').requestSubmit(); } });
   $('research-news').addEventListener('click',() => run('research','Bitcoin latest market news today'));
-  $('clear-chat').addEventListener('click',() => { epoch++; history = []; $('chat-log').replaceChildren(node('p','Chat cleared. Ask another question when ready.','signal-note')); $('chat-status').textContent = busy ? 'Chat cleared · finishing the current request' : 'Ready · research runs only when needed'; activity(); });
+  $('clear-chat').addEventListener('click',() => { epoch++; history = []; $('chat-log').replaceChildren(welcome.cloneNode(true)); $('chat-status').textContent = busy ? 'Chat cleared · finishing the current request' : 'Ready · research runs only when needed'; activity(); });
+  store.on('context', payload => renderContext(payload));
+  store.on('context-error', contextUnavailable);
+  if (store.context) renderContext(store.context);
   window.addEventListener('focus',refresh);
   refresh(); setInterval(refresh,30000);
 })();

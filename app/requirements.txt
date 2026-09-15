@@ -8,4 +8,6 @@ joblib>=1.3
 pyyaml>=6.0
 transformers>=4.45
 torch>=2.2
-scikit-learn>=1.4
+# Pinned: the deployed risk scalers and logistic models were pickled with 1.6.1.
+# A different minor version can change StandardScaler internals and shift scores silently.
+scikit-learn==1.6.1

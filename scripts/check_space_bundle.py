@@ -19,7 +19,25 @@ def check_bundle(root):
         "app/static/monitor/index.html", "app/static/monitor/analyst.js",
         "app/static/monitor/market-overview.js", "app/static/monitor/light-overrides.css",
         "app/static/monitor/analyst.css", "app/static/monitor/dashboard.js",
-        "app/static/monitor/styles.css", "requirements-agents.txt",
+        "app/static/monitor/styles.css", "app/static/monitor/store.js",
+        "app/static/monitor/sidebar.js", "app/static/monitor/views.css",
+        "app/static/monitor/workspace.css", "app/asset_catalog.yaml",
+        "app/static/monitor/deployment.js", "requirements-agents.txt",
+    ]
+    # Frozen deployment models. A missing artifact here means /predictions
+    # returns 503 in production, so fail the build instead.
+    for horizon in (1, 6, 24):
+        required += [
+            f"btc_deployment_models/risk/risk_{horizon}h_logistic.joblib",
+            f"btc_deployment_models/risk/risk_{horizon}h_scaler.joblib",
+            f"btc_deployment_models/direction/direction_{horizon}h_transformer.pt",
+            f"btc_deployment_models/direction/direction_{horizon}h_scaler.joblib",
+        ]
+    required += [
+        "btc_deployment_models/risk/risk_feature_list.csv",
+        "btc_deployment_models/risk/risk_band_empirical_results.csv",
+        "btc_deployment_models/risk/provisional_risk_band_thresholds.json",
+        "btc_deployment_models/direction/direction_stationary_feature_list.csv",
     ]
     registry = yaml.safe_load((root / "app/deployment_registry.yaml").read_text(encoding="utf-8"))
     for spec in registry.values():

@@ -1,0 +1,558 @@
+/* Tab shell and the components introduced with the four-view layout.
+   Reuses the existing token palette; adds no new colour system. */
+
+.view[hidden] { display: none !important; }
+.view { display: flex; flex-direction: column; gap: 18px; }
+
+/* ---------- panel inset ----------
+   .panel carries no padding of its own: in the base stylesheet each block
+   inside supplies it (.panel-heading 21px 22px, .health-grid 8px 22px 21px).
+   The blocks introduced with these views had none, so their content sat
+   against the panel border. This gives them the same inset. */
+.healthcheck,
+.risk-cards,
+.risk-panel > .signal-note,
+.holdout-grid,
+.holdout-panel > .signal-note,
+.skill-panel > #sample-note,
+.horizon-bars,
+.horizon-panel > .signal-note,
+.price-headline,
+.market-chart-legend,
+.envelope-readout,
+.price-panel > .signal-note,
+.skill-compare,
+.skill-panel > .model-description,
+.qual-summary,
+#qualification > .table-scroll,
+#qualification > .signal-note,
+.deployed-grid,
+.coverage-panel > * {
+  padding-left: 22px;
+  padding-right: 22px;
+}
+
+/* and a matching gap before the panel's bottom edge */
+.healthcheck-panel,
+.horizon-panel,
+.risk-panel,
+.price-panel,
+.skill-panel,
+.holdout-panel,
+.coverage-panel,
+#qualification { padding-bottom: 20px; }
+.coverage-panel { padding-top: 22px; }
+
+/* the last block in a panel should not hug the edge it sits above */
+.horizon-panel > .signal-note:last-child,
+.price-panel > .signal-note:last-child,
+#qualification > .signal-note:last-child { margin-bottom: 0; }
+
+@media (max-width: 600px) {
+  .healthcheck,
+  .risk-cards,
+  .risk-panel > .signal-note,
+  .holdout-grid,
+  .holdout-panel > .signal-note,
+  .skill-panel > #sample-note,
+  .horizon-bars,
+  .horizon-panel > .signal-note,
+  .price-headline,
+  .market-chart-legend,
+  .envelope-readout,
+  .price-panel > .signal-note,
+  .skill-compare,
+  .skill-panel > .model-description,
+  .qual-summary,
+  #qualification > .table-scroll,
+  #qualification > .signal-note,
+  .deployed-grid,
+  .coverage-panel > * { padding-left: 15px; padding-right: 15px; }
+}
+
+/* ---------- topbar ---------- */
+.topbar-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+.horizon-control {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px 5px;
+}
+.horizon-label {
+  font-size: 9.5px; letter-spacing: .14em; color: var(--muted);
+  padding: 0 7px 0 4px; font-weight: 600;
+}
+.horizon-control button {
+  border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600; color: var(--muted);
+  padding: 5px 12px; border-radius: 999px; transition: background .15s, color .15s;
+}
+.horizon-control button:hover { color: var(--text); }
+.horizon-control button.active { background: var(--cyan); color: #fff; }
+.horizon-control button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* ---------- asset scope ---------- */
+/* The body flag is set from /assets, which only reports an asset as deployed
+   when its artifacts actually loaded. */
+body[data-asset-deployed="false"] .deployed-only { display: none !important; }
+body:not([data-asset-deployed="false"]) .planned-only { display: none !important; }
+
+/* ---------- asset cards (the switcher) ---------- */
+.asset-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.asset-card {
+  display: flex; flex-direction: column; align-items: stretch; gap: 7px; text-align: left;
+  background: var(--panel); border: 1.5px solid var(--border); border-radius: 14px;
+  padding: 15px 17px 14px; font: inherit; color: inherit; cursor: pointer;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.asset-card:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(19,31,55,.06); }
+.asset-card.active { border-color: var(--cyan); }
+.asset-card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.asset-card-head { display: flex; align-items: center; gap: 9px; }
+.asset-mark {
+  width: 27px; height: 27px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; font-style: normal; font-size: 14px; font-weight: 700;
+  background: var(--bg); color: var(--muted); border: 1px solid var(--border);
+}
+.asset-mark[data-code="BTC"] { background: #fff4e4; border-color: #f2dcbb; color: #d3881f; }
+.asset-mark[data-code="ETH"] { background: #eeeffb; border-color: #d9dbf3; color: #5b5fb8; }
+.asset-mark[data-code="ADA"] { background: #e7f1fc; border-color: #cbdff5; color: #2f6fb5; }
+.asset-card-name { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+.asset-card-code { margin-left: auto; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+
+.asset-card-price { font-size: clamp(19px, 2.3vw, 23px); letter-spacing: -.03em; }
+.asset-card-change { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.asset-card-change.up { color: var(--green); }
+.asset-card-change.down { color: var(--red); }
+.asset-card-change small { color: var(--muted); font-size: 11px; }
+
+.asset-card-foot { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--border); }
+.prob-label {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+}
+.prob-label b { font-size: 14px; letter-spacing: -.01em; color: var(--text); text-transform: none; }
+.prob-track {
+  display: block; height: 5px; margin-top: 6px; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--border); overflow: hidden;
+}
+.prob-fill { display: block; height: 100%; width: 0; background: var(--muted); transition: width .35s ease, background .25s; }
+.asset-card.qualified-up .prob-fill { background: var(--green); }
+.asset-card.qualified-down .prob-fill { background: var(--red); }
+.asset-card-status { font-size: 11.5px; color: var(--muted); }
+
+.horizon-control button:disabled { opacity: .4; cursor: not-allowed; }
+.horizon-control button:disabled:hover { color: var(--muted); }
+
+.coverage-panel { border-left: 3px solid var(--muted); }
+.coverage-badge {
+  display: inline-block; font-size: 10px; letter-spacing: .12em; font-weight: 600;
+  text-transform: uppercase; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; margin-bottom: 12px;
+}
+.coverage-panel h2 { margin: 0 0 10px; font-size: clamp(18px, 2.3vw, 22px); letter-spacing: -.02em; }
+.coverage-panel p { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; line-height: 1.65; max-width: 66ch; }
+.coverage-requires {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; margin: 0 22px 10px; color: var(--text) !important; font-size: 13px !important;
+}
+.coverage-requires:empty { display: none; }
+
+/* ---------- conversation height ---------- */
+/* Loaded after workspace.css, so these replace the 680px cap that suited the
+   panel when it shared a scrolling page with everything else. */
+.analyst-panel {
+  height: var(--chat-height, calc(100dvh - 200px));
+  min-height: 420px;
+  max-height: none;
+}
+.analyst-panel .chat-log { max-height: none; min-height: 0; }
+
+/* The eight prompts wrapped onto four lines and took that height away from the
+   answers. One scrolling row instead. */
+.analyst-panel .quick-questions { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.analyst-panel .quick-questions::-webkit-scrollbar { display: none; }
+.analyst-panel .quick-questions button { flex: none; white-space: nowrap; }
+
+/* trim the panel's own header furniture; every line here is a line of answer */
+.analyst-panel .panel-heading { padding: 14px 18px 8px; }
+.analyst-panel .provider-status { padding: 0 18px 9px; }
+
+/* the pipeline stays legible but gives a little height back */
+.analyst-panel .agent-flow { padding: 12px 10px 9px; margin: 0 18px 10px; }
+.analyst-panel .agent-dot { width: 29px; height: 29px; }
+.analyst-panel .agent-dot svg { width: 15px; height: 15px; }
+.analyst-panel .agent-node { width: 78px; }
+
+@media (max-width: 900px) {
+  .analyst-panel { height: auto; min-height: 0; }
+  .analyst-panel .chat-log { min-height: 340px; }
+}
+
+.analyst-scope {
+  background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--muted);
+  border-radius: 10px; padding: 11px 14px; margin-bottom: 12px;
+  font-size: 12.5px; line-height: 1.6; color: var(--muted);
+}
+
+.nav-footnote {
+  margin: 14px 12px 0; font-size: 11px; line-height: 1.5;
+  color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px;
+}
+
+/* ---------- probability by timeframe ---------- */
+.warn-tag {
+  align-self: flex-start; white-space: nowrap;
+  font-size: 9.5px; letter-spacing: .1em; font-weight: 700; text-transform: uppercase;
+  color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  border-radius: 999px; padding: 5px 10px; cursor: help;
+}
+
+.horizon-bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 6px 0 14px; }
+.horizon-bar {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  background: none; border: 1px solid transparent; border-radius: 12px;
+  padding: 12px 8px 10px; font: inherit; color: inherit; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.horizon-bar:hover { background: var(--bg); }
+.horizon-bar.selected { border-color: var(--cyan); background: var(--bg); }
+.horizon-bar:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.bar-number { font-size: 17px; letter-spacing: -.02em; }
+.bar-track {
+  position: relative; width: 46px; height: 118px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+  display: flex; align-items: flex-end; overflow: hidden;
+}
+.horizon-bar:hover .bar-track, .horizon-bar.selected .bar-track { background: var(--panel); }
+.bar-fill {
+  width: 100%; background: var(--muted); border-radius: 0;
+  transition: height .35s ease, background .25s;
+}
+.qualified-up .bar-fill { background: var(--green); }
+.qualified-down .bar-fill { background: var(--red); }
+/* the no-information line: a bar above it is not automatically a signal */
+.bar-midline {
+  position: absolute; left: 0; right: 0; bottom: 50%; height: 0;
+  border-top: 1px dashed var(--muted); opacity: .65; z-index: 1;
+}
+.bar-label { font-size: 12px; font-weight: 600; }
+.bar-state { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.qualified-up .bar-state { color: var(--green); }
+.qualified-down .bar-state { color: var(--red); }
+
+/* the DOWN score sits under each direction bar so both sides are always visible */
+.bar-down { font-size: 10px; color: var(--muted); letter-spacing: .02em; }
+
+/* ---------- large movement risk ---------- */
+/* Band colour marks how unusual the score is, not how bad: this is a two-sided
+   barrier touch, so HIGH means "expect a large move", not "expect a fall". */
+.risk-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; }
+.risk-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-left: 3px solid var(--border); border-radius: 11px; padding: 14px 16px;
+}
+.risk-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.risk-horizon { font-size: 13px; font-weight: 600; }
+.risk-band {
+  font-size: 9.5px; letter-spacing: .1em; font-weight: 700; text-transform: uppercase;
+  border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; color: var(--muted);
+}
+.risk-score {
+  display: block; font-size: clamp(23px, 3vw, 29px); letter-spacing: -.03em;
+  margin: 9px 0 11px; font-variant-numeric: tabular-nums;
+}
+.risk-facts { margin: 0; padding-top: 10px; border-top: 1px solid var(--border); }
+.risk-facts > div { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
+.risk-facts dt { font-size: 11px; color: var(--muted); }
+.risk-facts dd { margin: 0; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+.risk-card[data-level="LOW"] { border-left-color: var(--green); }
+.risk-card[data-level="LOW"] .risk-band { color: var(--green); border-color: color-mix(in srgb, var(--green) 35%, var(--border)); }
+.risk-card[data-level="TYPICAL"] { border-left-color: var(--muted); }
+.risk-card[data-level="ELEVATED"] { border-left-color: #c8912f; }
+.risk-card[data-level="ELEVATED"] .risk-band { color: #c8912f; border-color: color-mix(in srgb, #c8912f 35%, var(--border)); }
+.risk-card[data-level="ELEVATED"] .risk-score { color: #c8912f; }
+.risk-card[data-level="HIGH"] { border-left-color: var(--red); background: color-mix(in srgb, var(--red) 5%, var(--bg)); }
+.risk-card[data-level="HIGH"] .risk-band { color: var(--red); border-color: color-mix(in srgb, var(--red) 35%, var(--border)); }
+.risk-card[data-level="HIGH"] .risk-score { color: var(--red); }
+
+/* ---------- price panel ---------- */
+.price-headline { display: flex; align-items: baseline; gap: 10px; margin: 2px 0 14px; }
+.price-headline strong { font-size: clamp(23px, 3vw, 29px); letter-spacing: -.03em; }
+.price-headline span { font-size: 12px; color: var(--muted); }
+
+.market-chart-legend .flat-line {
+  display: inline-block; width: 15px; height: 0; vertical-align: middle;
+  border-top: 2px dashed var(--muted);
+}
+.market-chart-legend .band-swatch {
+  display: inline-block; width: 15px; height: 9px; vertical-align: middle; border-radius: 2px;
+  background: color-mix(in srgb, var(--cyan) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cyan) 30%, transparent);
+}
+.market-chart-legend .band-swatch.up {
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+  border-color: color-mix(in srgb, var(--green) 34%, transparent);
+}
+.market-chart-legend .band-swatch.down {
+  background: color-mix(in srgb, var(--red) 22%, transparent);
+  border-color: color-mix(in srgb, var(--red) 34%, transparent);
+}
+
+.envelope-readout {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;
+  margin: 14px 0 12px;
+}
+.envelope-readout > div { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; }
+.envelope-readout span {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+}
+.envelope-readout strong { display: block; font-size: 18px; margin-top: 4px; letter-spacing: -.02em; }
+
+@media (max-width: 600px) {
+  .horizon-bars { gap: 6px; }
+  .bar-track { width: 38px; height: 96px; }
+  .bar-number { font-size: 16px; }
+}
+
+/* ---------- skill versus baseline ---------- */
+.skill-compare { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; margin: 6px 0 16px; }
+.skill-figure span {
+  display: block; font-size: 10px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase;
+}
+.skill-figure strong { display: block; font-size: clamp(30px, 4vw, 42px); line-height: 1.05; letter-spacing: -.03em; }
+.skill-figure small { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.skill-delta {
+  padding: 9px 14px; border-radius: 999px; font-size: 13px;
+  background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+}
+.skill-delta.positive { color: var(--green); border-color: color-mix(in srgb, var(--green) 35%, var(--border)); }
+.skill-delta.negative { color: var(--red); border-color: color-mix(in srgb, var(--red) 35%, var(--border)); }
+
+/* ---------- held-out test performance ---------- */
+.holdout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.holdout-row {
+  background: var(--bg); border: 1px solid var(--border);
+  border-left: 3px solid var(--border); border-radius: 10px; padding: 13px 15px;
+}
+.holdout-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 11px; }
+.holdout-head strong { font-size: 14px; letter-spacing: -.01em; }
+.holdout-model { font-size: 11px; color: var(--muted); }
+.holdout-stats { display: flex; gap: 16px; }
+.holdout-stat span {
+  display: block; font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.holdout-stat strong { display: block; font-size: 15px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.holdout-stat.lead strong { font-size: 21px; letter-spacing: -.02em; }
+
+/* chance is the reference point, so only a real margin above it reads as skill */
+.holdout-row[data-state="ok"] { border-left-color: var(--green); }
+.holdout-row[data-state="ok"] .lead strong { color: var(--green); }
+.holdout-row[data-state="warn"] { border-left-color: #c8912f; }
+.holdout-row[data-state="warn"] .lead strong { color: #c8912f; }
+.holdout-row[data-state="bad"] { border-left-color: var(--red); }
+.holdout-row[data-state="bad"] .lead strong { color: var(--red); }
+
+/* ---------- reliability-gate table ---------- */
+.qual-summary { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 4px 0 18px; }
+.qual-tile { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.qual-tile span { display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.qual-tile strong { display: block; font-size: 22px; margin: 3px 0 2px; letter-spacing: -.02em; }
+.qual-tile small { color: var(--muted); font-size: 11.5px; }
+.qual-table td:first-child { color: var(--muted); }
+
+/* ---------- system healthcheck ---------- */
+/* A vital-signs strip: one measured value per tile, coloured only by what the
+   API actually reported. An unknown value stays neutral rather than green. */
+.healthcheck-panel .panel-heading { margin-bottom: 14px; }
+.healthcheck { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; }
+/* inside their own frame the tiles sit on the page ground, not on the panel */
+.healthcheck-panel .hc-tile { background: var(--bg); }
+.healthcheck-panel .hc-tile[data-state="bad"] { background: color-mix(in srgb, var(--red) 6%, var(--bg)); }
+/* seconds tick, so the number must not reflow the tile as digits change */
+.hc-value { font-variant-numeric: tabular-nums; }
+.hc-tile {
+  background: var(--panel); border: 1px solid var(--border);
+  border-top: 3px solid var(--border); border-radius: 12px;
+  padding: 13px 15px 14px; display: flex; flex-direction: column; gap: 3px;
+  transition: border-color .2s;
+}
+.hc-label { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hc-value {
+  font-size: clamp(21px, 2.6vw, 27px); line-height: 1.15; letter-spacing: -.03em;
+  color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.hc-detail { font-size: 11px; line-height: 1.45; color: var(--muted); }
+
+.hc-tile[data-state="ok"] { border-top-color: var(--green); }
+.hc-tile[data-state="ok"] .hc-value { color: var(--green); }
+.hc-tile[data-state="warn"] { border-top-color: #c8912f; }
+.hc-tile[data-state="warn"] .hc-value { color: #c8912f; }
+.hc-tile[data-state="bad"] { border-top-color: var(--red); }
+.hc-tile[data-state="bad"] .hc-value { color: var(--red); }
+.hc-tile[data-state="bad"] { background: color-mix(in srgb, var(--red) 4%, var(--panel)); }
+
+@media (max-width: 600px) {
+  .healthcheck { grid-template-columns: repeat(2, 1fr); gap: 9px; }
+  .hc-tile { padding: 11px 12px 12px; }
+}
+
+/* ---------- deployed models ---------- */
+.deployed-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.deployed-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.deployed-horizon { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.deployed-card strong { display: block; font-size: 17px; margin: 4px 0 2px; letter-spacing: -.01em; }
+.deployed-features { display: block; font-size: 12.5px; color: var(--muted); }
+.deployed-card code { display: inline-block; margin-top: 9px; font-size: 11px; color: var(--muted); cursor: help; }
+
+/* ---------- chart hover readout ---------- */
+.market-chart-wrap { position: relative; margin-left: 22px; margin-right: 22px; }
+.chart-tooltip {
+  position: absolute; top: 8px; transform: translateX(-50%);
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(19, 31, 55, .08); z-index: 2;
+}
+.chart-tooltip strong { display: block; font-size: 13px; }
+.chart-tooltip span { font-size: 11px; color: var(--muted); }
+#market-price-chart { cursor: crosshair; }
+
+/* ---------- inline definitions ---------- */
+button.info {
+  width: 14px; height: 14px; padding: 0; flex: none;
+  border-radius: 50%; border: 1px solid var(--border); background: var(--bg);
+  color: var(--muted); font-size: 9px; line-height: 1; cursor: help;
+  position: relative; font-family: inherit;
+}
+button.info:hover, button.info:focus-visible { color: var(--text); border-color: var(--cyan); }
+button.info::after {
+  content: attr(data-tip);
+  position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%);
+  width: max-content; max-width: 260px; white-space: normal; text-align: left;
+  background: var(--text); color: var(--panel);
+  font-size: 11.5px; line-height: 1.5; letter-spacing: 0;
+  padding: 8px 10px; border-radius: 8px; z-index: 5;
+  opacity: 0; visibility: hidden; transition: opacity .12s;
+}
+button.info:hover::after, button.info:focus-visible::after { opacity: 1; visibility: visible; }
+
+.evidence-panel .evidence-disclaimer { margin: 0 22px 12px; }
+
+/* ---------- agent pipeline ---------- */
+.agent-flow {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 2px; padding: 16px 10px 12px; margin-bottom: 12px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+}
+
+.agent-node {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  flex: 0 0 auto; width: 86px; position: relative;
+  cursor: help; background: none; border: 0;
+}
+.agent-node:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; border-radius: 8px; }
+
+.agent-dot {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--panel); border: 1.5px solid var(--border);
+  color: var(--muted); transition: border-color .25s, color .25s, box-shadow .25s, background .25s;
+}
+.agent-dot svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+.agent-name { font-size: 11.5px; font-weight: 600; letter-spacing: -.01em; text-align: center; }
+.agent-state {
+  font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); transition: color .25s;
+}
+
+/* connector */
+.agent-link {
+  flex: 1 1 auto; height: 2px; margin-top: 17px; min-width: 10px; border-radius: 2px;
+  background: var(--border);
+  background-size: 12px 2px;
+}
+
+/* --- state: idle --- */
+.agent-node[data-state="idle"] .agent-dot { border-style: dashed; }
+
+/* --- state: running --- */
+.agent-node[data-state="running"] .agent-dot {
+  border-color: var(--cyan); color: var(--cyan); background: var(--panel);
+  animation: agent-pulse 1.4s ease-in-out infinite;
+}
+.agent-node[data-state="running"] .agent-name { color: var(--cyan); }
+.agent-node[data-state="running"] .agent-state { color: var(--cyan); }
+@keyframes agent-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cyan) 42%, transparent); }
+  70%      { box-shadow: 0 0 0 9px color-mix(in srgb, var(--cyan) 0%, transparent); }
+}
+/* flowing dashes into the stage that is working */
+.agent-link[data-state="running"] {
+  background-image: repeating-linear-gradient(90deg,
+    var(--cyan) 0 6px, transparent 6px 12px);
+  animation: agent-flow-dash .6s linear infinite;
+}
+@keyframes agent-flow-dash { to { background-position: 12px 0; } }
+
+/* --- state: done --- */
+.agent-node[data-state="done"] .agent-dot {
+  border-color: var(--green); color: #fff; background: var(--green);
+}
+.agent-node[data-state="done"] .agent-state { color: var(--green); }
+.agent-link[data-state="done"] { background: var(--green); }
+
+/* --- states: unavailable / error --- */
+.agent-node[data-state="unavailable"] .agent-dot,
+.agent-node[data-state="error"] .agent-dot { border-color: var(--red); color: var(--red); }
+.agent-node[data-state="unavailable"] .agent-state,
+.agent-node[data-state="error"] .agent-state { color: var(--red); }
+.agent-link[data-state="unavailable"],
+.agent-link[data-state="error"] { background: var(--red); }
+
+/* Hover explanation. Opens downward: .analyst-panel clips overflow, and the
+   pipeline sits at the top of it, so an upward tooltip would be cut off. */
+.agent-node::after {
+  content: attr(data-tip);
+  position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%);
+  width: max-content; max-width: 250px; white-space: normal; text-align: left;
+  background: var(--text); color: var(--panel);
+  font-size: 11.5px; font-weight: 400; line-height: 1.5; letter-spacing: 0;
+  padding: 9px 11px; border-radius: 8px; z-index: 6;
+  opacity: 0; visibility: hidden; transition: opacity .14s;
+}
+.agent-node:hover::after, .agent-node:focus-visible::after { opacity: 1; visibility: visible; }
+/* the first and last tooltips would overflow the panel edges */
+.agent-node:first-child::after { left: 0; transform: none; }
+.agent-node:last-child::after { left: auto; right: 0; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-node[data-state="running"] .agent-dot { animation: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--cyan) 22%, transparent); }
+  .agent-link[data-state="running"] { animation: none; background: var(--cyan); }
+}
+
+@media (max-width: 700px) {
+  .agent-flow { flex-wrap: wrap; justify-content: flex-start; gap: 10px 0; padding: 14px 12px; }
+  .agent-node { width: 20%; }
+  .agent-link { display: none; }
+  .agent-node::after { max-width: 180px; }
+  .agent-node:nth-child(n+3)::after { left: 50%; right: auto; transform: translateX(-50%); }
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+  .topbar-controls { width: 100%; justify-content: space-between; }
+}
+
+@media (max-width: 600px) {
+  .skill-compare { gap: 14px; }
+  .horizon-label { display: none; }
+  .horizon-control button { padding: 5px 10px; }
+  button.info::after { max-width: 190px; }
+}

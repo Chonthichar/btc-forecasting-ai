@@ -1,0 +1,23 @@
+{
+  "1h": {
+    "low_upper": 0.006283402408639708,
+    "typical_upper": 0.00966541449122616,
+    "elevated_upper": 0.01897560324594161,
+    "high_lower": 0.01897560324594161,
+    "status": "PROVISIONAL_OOF_ONLY"
+  },
+  "6h": {
+    "low_upper": 0.08946814500492366,
+    "typical_upper": 0.14998050688327072,
+    "elevated_upper": 0.3008841513038684,
+    "high_lower": 0.3008841513038684,
+    "status": "PROVISIONAL_OOF_ONLY"
+  },
+  "24h": {
+    "low_upper": 0.4691818596783752,
+    "typical_upper": 0.6161514457010732,
+    "elevated_upper": 0.7849612705037553,
+    "high_lower": 0.7849612705037553,
+    "status": "PROVISIONAL_OOF_ONLY"
+  }
+}

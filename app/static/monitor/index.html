@@ -18,75 +18,202 @@
 
   <title>BTC Forecasting AI — Monitoring &amp; research</title>
   <link rel="stylesheet" href="/monitor/assets/styles.css">
-  <script src="/monitor/assets/dashboard.js" defer></script>
   <link rel="stylesheet" href="/monitor/assets/analyst.css">
-  <link rel="stylesheet" href="/monitor/assets/light-overrides.css?v=20260910-sidebar-v6">
+  <link rel="stylesheet" href="/monitor/assets/light-overrides.css">
+  <link rel="stylesheet" href="/monitor/assets/workspace.css">
+  <link rel="stylesheet" href="/monitor/assets/views.css">
+  <script src="/monitor/assets/store.js" defer></script>
+  <script src="/monitor/assets/dashboard.js" defer></script>
   <script src="/monitor/assets/analyst.js" defer></script>
+  <script src="/monitor/assets/deployment.js" defer></script>
   <script src="/monitor/assets/market-overview.js" defer></script>
   <script src="/monitor/assets/monitoring-events.js" defer></script>
-  <script src="/monitor/assets/sidebar.js?v=20260910-sidebar" defer></script>
+  <script src="/monitor/assets/sidebar.js" defer></script>
 </head>
 <body>
-<aside class="sidebar">
-  <div class="sidebar-scroll">
-    <div class="nav-label">WORKSPACE</div>
+<aside class="sidebar" aria-label="Research workspace">
+  <a class="sidebar-brand" href="#forecast" aria-label="CryptoLens forecast"><span class="sidebar-brand-mark"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 17V13M8 17V10M12 17v-5M16 17V8M20 17V5M4 10l5-4 4 3 7-6"/></svg></span><strong>CryptoLens</strong></a>
+  <button type="button" class="navigation-toggle" aria-expanded="false" aria-controls="workspace-navigation">Menu</button>
+  <div class="sidebar-scroll" id="workspace-navigation">
     <nav class="sidebar-menu" aria-label="Workspace navigation">
-      <a class="nav-item active" href="#overview"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7.5 12 4l8 3.5-8 3.5-8-3.5Zm0 4L12 15l8-3.5M4 15.5 12 19l8-3.5"/></svg><span>Overview</span></a>
-      <a class="nav-item" href="#evidence"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 4h10v14H7zM4 7h3v13h10v-2M10 8h4M10 12h4"/></svg><span>News analysis</span></a>
-      <a class="nav-item" href="#analyst"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3V5Z"/></svg><span>AI assistant</span></a>
+      <a class="nav-item active" href="#forecast" data-view="forecast"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4v16h16M7 15l4-5 4 2 5-7"/></svg><span>Forecast</span></a>
+      <a class="nav-item" href="#analyst" data-view="analyst"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3V5Z"/></svg><span>AI analyst</span></a>
+      <a class="nav-item" href="#performance" data-view="performance"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-4M12 16V7M16 16v-6"/></svg><span>Track record</span></a>
+      <a class="nav-item" href="#method" data-view="method"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5.5c3-1 5-.5 8 1.5v12c-3-2-5-2.5-8-1.5v-12Zm16 0c-3-1-5-.5-8 1.5M20 5.5v12c-3-1-5-.5-8 1.5"/></svg><span>Method &amp; status</span></a>
     </nav>
-    <div class="nav-label research-label">RESEARCH</div>
-    <nav class="research-nav" aria-label="Research navigation">
-      <a class="nav-item" href="#monitoring"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5.5c3-1 5-.5 8 1.5v12c-3-2-5-2.5-8-1.5v-12Zm16 0c-3-1-5-.5-8 1.5M20 5.5v12c-3-1-5-.5-8 1.5"/></svg><span>About the framework</span></a>
-      <a class="nav-item" href="/docs" target="_blank" rel="noopener"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6M10 3v5l-5 10a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3L14 8V3M8 14h8"/></svg><span>Thesis prototype</span><b aria-hidden="true">&nearr;</b></a>
-    </nav>
-    <div class="sidebar-card"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6M10 3v5l-5 10a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3L14 8V3M8 14h8"/></svg><strong>Built for research</strong><p>Exploring how market data and context work together.</p></div>
+    <p class="nav-footnote">Bitcoin, Ethereum and Cardano are in scope. Only Bitcoin has trained models today.</p>
   </div>
   <div class="sidebar-bottom"><div class="sidebar-user"><span class="sidebar-avatar">CS</span><span><strong>Chonthichar</strong><small>Research workspace</small></span><i class="dot sidebar-status-dot" id="connection-dot"></i><span class="sr-only" id="connection-label">Connecting to API</span></div></div>
 </aside>
 <main>
-  <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> Models <span>/</span> <b id="crumb">btc-direction-1h</b></div><div class="top-status"><span class="pulse dot"></span> Auto-refresh · 30s</div></header>
-  <section class="page-heading ai-heading" id="overview"><div><h1>Market overview</h1><p>Multi-asset forecasts, market context, and AI news analysis.</p></div><span class="live-state" id="market-live">CONNECTING</span></section>
-  <section class="asset-overview" aria-labelledby="asset-overview-title">
-    <div class="section-heading asset-heading"><div><h2 id="asset-overview-title">Markets</h2><p>Select an asset, then compare its available forecast horizons.</p></div><span class="subtle-tag">LIVE MODEL DATA</span></div>
-    <div class="asset-cards" role="list" aria-label="Forecast assets">
-      <button class="asset-card active" type="button" data-asset="BTC" aria-pressed="true"><span class="asset-icon bitcoin">₿</span><span class="asset-name">Bitcoin<small>BTC / USDT</small></span><strong id="asset-btc-price">—</strong><span id="asset-btc-change" class="asset-change">Loading market data</span></button>
-      <button class="asset-card unavailable" type="button" data-asset="ETH" aria-pressed="false"><span class="asset-icon ethereum">Ξ</span><span class="asset-name">Ethereum<small>ETH / USDT</small></span><strong>Not configured</strong><span class="asset-change">Model artifact required</span></button>
-      <button class="asset-card unavailable" type="button" data-asset="ADA" aria-pressed="false"><span class="asset-icon cardano">A</span><span class="asset-name">Cardano<small>ADA / USDT</small></span><strong>Not configured</strong><span class="asset-change">Model artifact required</span></button>
+  <header class="topbar">
+    <div class="breadcrumb">CryptoLens <span>›</span> <b id="section-crumb">Forecast</b><span id="crumb" hidden>btc-direction-1h</span></div>
+    <div class="topbar-controls">
+      <div class="horizon-control" role="group" aria-label="Forecast horizon">
+        <span class="horizon-label">HORIZON</span>
+        <button type="button" data-horizon="1" class="active" aria-pressed="true">1H</button>
+        <button type="button" data-horizon="6" aria-pressed="false">6H</button>
+        <button type="button" data-horizon="24" aria-pressed="false">24H</button>
+      </div>
+      <span class="live-state deployed-only" id="market-live">CONNECTING</span>
+    </div>
+  </header>
+
+  <div class="notice" id="notice" role="status" hidden></div>
+
+  <!-- ===================== VIEW 1 · FORECAST ===================== -->
+  <section class="view" id="view-forecast" data-view="forecast" aria-label="Bitcoin directional forecast">
+    <section class="page-heading" id="forecast"><div><h1>Market overview</h1><p>A closer look at the forecast, the news, and the context.</p></div><span class="subtle-tag deployed-only" id="reliability-threshold">RELIABILITY GATE</span></section>
+
+    <div class="asset-cards" id="asset-cards" role="group" aria-label="Select an asset"></div>
+
+    <article class="panel coverage-panel planned-only">
+      <span class="coverage-badge">IN SCOPE · NOT YET TRAINED</span>
+      <h2><span data-asset-field="name">This asset</span> has no deployed model</h2>
+      <p>This coin is part of the thesis scope, but no trained artifacts are registered for it, so no forecast can be produced. Nothing on this page is estimated or carried over from another asset.</p>
+      <p class="coverage-requires" data-asset-field="requires"></p>
+      <p class="signal-note">Bitcoin has deployed models for the 1h, 6h and 24h horizons. Select BTC to see live forecasts and the recorded track record.</p>
+    </article>
+
+    <article class="panel horizon-panel deployed-only" aria-labelledby="direction-title">
+      <div class="panel-heading"><div><h2 id="direction-title">Direction by timeframe</h2><p>Will the close be higher than it is now? Each horizon has its own model.</p></div><span class="subtle-tag" id="direction-candle">AWAITING CANDLE</span></div>
+      <div class="horizon-bars" id="horizon-bars" role="list"></div>
+      <p class="signal-note">The bar is the model's UP score and the 50% line is the no-information point. These are model scores, not calibrated probabilities. Walk-forward validation was strongest at 1h (ROC-AUC 0.548) and weaker at 6h and 24h (0.524, 0.519), so read the longer horizons cautiously.</p>
+    </article>
+
+    <article class="panel risk-panel deployed-only" aria-labelledby="risk-title">
+      <div class="panel-heading"><div><h2 id="risk-title">Large movement risk<button type="button" class="info" data-tip="A two-sided barrier-touch model. It asks only whether price travels far enough in either direction, so it is not a crash or downside signal and says nothing about which way.">?</button></h2><p id="risk-event">Probability that BTC touches +2.5% or -2.5% from the current close</p></div><span class="subtle-tag">EITHER DIRECTION</span></div>
+      <div class="risk-cards" id="risk-cards" role="list"></div>
+      <p class="signal-note">Bands are provisional and derived from out-of-fold scores only. The historical rate is how often the event actually occurred for similar model scores; it is not this model's probability for right now.</p>
+    </article>
+
+    <section class="market-strip deployed-only" aria-label="Current market context">
+      <div class="market-price"><span><span data-asset-field="pair">BTC / USDT</span> · Latest hourly close</span><strong id="ai-price">—</strong></div>
+      <div><span>MARKET REGIME</span><strong id="ai-regime">Unavailable</strong></div>
+      <div><span>INTERNAL SENTIMENT</span><strong id="ai-sentiment">Unavailable</strong></div>
+      <div><span>LAST MODEL REFRESH · UTC</span><strong id="ai-refreshed">Awaiting data</strong></div>
+    </section>
+
+    <article class="panel price-panel deployed-only">
+      <div class="panel-heading">
+        <div>
+          <h2><span data-asset-field="name">Bitcoin</span> price and volatility envelope</h2>
+          <p id="market-forecast-description">48-hour lookback · next <span id="envelope-horizon">24</span> hours</p>
+        </div>
+        <span class="warn-tag" title="The deployed models classify direction only. They output no price, so no price is predicted here.">NOT A PRICE FORECAST</span>
+      </div>
+      <div class="price-headline"><strong id="price-now">—</strong><span id="market-forecast-symbol" data-asset-field="pair">BTC / USDT</span></div>
+      <div class="market-chart-wrap"><canvas id="market-price-chart" aria-label="Price history with a volatility envelope" role="img"></canvas><div class="market-chart-empty" id="market-chart-empty" hidden><strong>No saved prices yet</strong><p>The hourly worker records a reference close with every forecast. The curve appears once history accumulates.</p></div></div>
+      <div class="market-chart-legend">
+        <span><i class="history-line"></i> Price history</span>
+        <span><i class="flat-line"></i> Classification boundary · last close</span>
+        <span><i class="band-swatch up"></i> P(UP) region</span>
+        <span><i class="band-swatch down"></i> P(DOWN) region</span>
+        <span>Band height · 80% volatility envelope</span>
+      </div>
+      <div class="envelope-readout">
+        <div><span>Envelope over the next <span id="envelope-horizon-2">24</span>h<button type="button" class="info" data-tip="±1.28 standard deviations from 24-hour realised volatility, scaled by the square root of the horizon. This is what the market has recently been doing, not what the model predicts.">?</button></span><strong id="envelope-range">—</strong></div>
+        <div><span>Realised volatility · 24h</span><strong id="envelope-sigma">—</strong></div>
+      </div>
+      <p class="signal-note" id="market-chart-note">The model asks one question: will the close be above or below the dashed line? The two shaded regions are its answer — each side's depth of colour is that side's probability, so a confident call makes one region clearly dominant. The dashed line stays flat because no price movement is predicted, and the band's <em>height</em> is recent realised volatility, used only to give the probabilities a realistic vertical scale. No price, expected return or target is produced, and the band must not be read as a predicted price range. Regions are grey whenever the reliability gate has not qualified the direction.</p>
+    </article>
+  </section>
+
+  <!-- ===================== VIEW 2 · ANALYST ===================== -->
+  <section class="view" id="view-analyst" data-view="analyst" hidden aria-label="AI market analyst">
+    <div class="analyst-scope planned-only">The analyst reasons over Bitcoin forecast data. Selecting another coin does not change what it can answer, because no model is deployed for it yet.</div>
+    <div class="analyst-layout">
+      <article class="panel analyst-panel" id="analyst"><div class="panel-heading"><div><span class="eyebrow">RESEARCH WORKSPACE</span><h2>Conversation</h2></div><button class="text-button" id="clear-chat" type="button">Clear chat</button></div><div class="provider-status" id="provider-status">Checking provider configuration…</div><div class="agent-flow" id="agent-flow" role="group" aria-label="Agent pipeline activity">
+        <div class="agent-node" id="agent-forecast" data-state="idle" tabindex="0" data-tip="Reads your saved forecast: probability, validated reliability, and whether the reliability gate qualifies a direction."><span class="agent-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M7 15l4-5 4 2 5-7"/></svg></span><span class="agent-name">Forecast</span><span class="agent-state">idle</span></div>
+        <span class="agent-link" aria-hidden="true"></span>
+        <div class="agent-node" id="agent-research" data-state="idle" tabindex="0" data-tip="Runs up to three neutral web searches through Tavily. Only triggered when the question needs current news."><span class="agent-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg></span><span class="agent-name">Research</span><span class="agent-state">idle</span></div>
+        <span class="agent-link" aria-hidden="true"></span>
+        <div class="agent-node" id="agent-review" data-state="idle" tabindex="0" data-tip="Independently re-reads every retrieved source for stance, contradiction and quality. Uses no tools of its own."><span class="agent-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.6"/></svg></span><span class="agent-name">Review</span><span class="agent-state">idle</span></div>
+        <span class="agent-link" aria-hidden="true"></span>
+        <div class="agent-node" id="agent-validation" data-state="idle" tabindex="0" data-tip="Checks freshness, source identity and conflicts, and blocks any answer that would promote an unreliable signal."><span class="agent-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8 12 3 3 5-6"/></svg></span><span class="agent-name">Validation</span><span class="agent-state">idle</span></div>
+        <span class="agent-link" aria-hidden="true"></span>
+        <div class="agent-node" id="agent-decision" data-state="idle" tabindex="0" data-tip="Writes the final answer using only validated facts. Every number and source it cites is checked before display."><span class="agent-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v11H9l-4 3V5Z"/></svg></span><span class="agent-name">Decision</span><span class="agent-state">idle</span></div>
+      </div><div class="chat-log" id="chat-log" role="log" aria-label="Chat history" aria-live="polite"><div class="chat-welcome"><div class="analyst-orb">✧</div><h3>A clearer view of BTC.</h3><p>Compare model signals, inspect reliability, or explore current market evidence with linked sources.</p><span>Grounded in your saved forecasts</span></div></div><div class="quick-questions" id="quick-questions" aria-label="Suggested questions"></div><form id="chat-form"><label class="sr-only" for="chat-input">Ask the AI market analyst</label><div class="chat-compose"><textarea id="chat-input" maxlength="2000" rows="2" placeholder="Ask about BTC, a forecast, or current news…" required></textarea><button class="primary-button" id="send-chat" type="submit">Send ↗</button></div><div class="chat-foot"><span id="chat-status" role="status">Ready · research runs only when needed</span><span>Enter to send · Shift + Enter for a new line</span></div></form></article>
+      <article class="panel evidence-panel" id="evidence"><div class="panel-heading"><div><span class="eyebrow">AI NEWS REVIEW</span><h2>Sources</h2><p id="evidence-status">No news analysis requested yet</p></div><button class="text-button" id="research-news" type="button" aria-label="Refresh Bitcoin news analysis">↻ Refresh</button></div><div class="evidence-disclaimer">External news is context only. It does not change model reliability, and it never overrides the reliability gate.</div><div class="evidence-list" id="evidence-list"><div class="evidence-empty"><span>◎</span><strong>No news analysis yet.</strong><p>Ask a current-news question or refresh this panel. The 30-second dashboard update does not call research providers.</p></div></div><div class="evidence-footer" id="evidence-footer">News context is reviewed before it is shown.</div></article>
     </div>
   </section>
-  <section class="panel market-forecast-panel" aria-labelledby="market-forecast-title">
-    <div class="market-forecast-head"><div><span class="eyebrow" id="market-forecast-symbol">BTC / USDT</span><h2 id="market-forecast-title">Bitcoin directional forecast</h2><p id="market-forecast-description">Saved reference prices with the selected model's directional probability.</p></div><div class="forecast-horizons" aria-label="Forecast horizon"><button type="button" class="selected" data-market-horizon="1" aria-pressed="true">1H</button><button type="button" data-market-horizon="6" aria-pressed="false">6H</button><button type="button" data-market-horizon="24" aria-pressed="false">24H</button></div></div>
-    <div class="market-chart-meta"><div><strong id="market-chart-price">—</strong><span>Latest saved close</span></div><div><strong id="market-chart-direction">Awaiting forecast</strong><span id="market-chart-probability">Probability unavailable</span></div></div>
-    <div class="market-chart-wrap"><canvas id="market-price-chart" aria-label="Bitcoin saved reference-price history and directional forecast" role="img"></canvas><div class="market-chart-empty" id="market-chart-empty" hidden><strong id="market-chart-empty-title">Forecast not configured</strong><p id="market-chart-empty-copy">A validated model artifact and data pipeline are required before this asset can show a forecast.</p></div></div>
-    <div class="market-chart-legend"><span><i class="history-line"></i> Saved reference price</span><span><i class="forecast-line"></i> Directional forecast window</span><span id="market-chart-note">Classification model • no fabricated price target</span></div>
+
+  <!-- ===================== VIEW 3 · TRACK RECORD ===================== -->
+  <section class="view" id="view-performance" data-view="performance" hidden aria-label="Forward track record">
+    <section class="page-heading" id="performance"><div><div class="eyebrow">FORWARD PERFORMANCE</div><h1><span data-asset-field="name">Bitcoin</span> track record <span class="badge deployed-only" id="model-badge">COLLECTING</span></h1><p>Every forecast recorded before its outcome is known. No historical backtest enters these numbers.</p></div><button class="primary-button deployed-only" id="refresh-button">↻ <span>Run refresh</span></button></section>
+
+    <article class="panel coverage-panel planned-only">
+      <span class="coverage-badge">NO RECORDED FORECASTS</span>
+      <h2>Nothing has been forecast for <span data-asset-field="name">this asset</span></h2>
+      <p>Forward monitoring only records outcomes for assets with a deployed model. There is no accuracy, Brier score, or prediction history for this coin, and Bitcoin's results are not shown here in its place.</p>
+    </article>
+
+    <article class="panel skill-panel deployed-only" aria-labelledby="skill-title">
+      <div class="panel-heading"><div><h2 id="skill-title">Skill versus baseline</h2><p>Directional accuracy against an always-UP baseline on the same scored forecasts</p></div><div class="period" aria-label="Accuracy window"><button data-days="7" class="selected" aria-pressed="true">7 days</button><button data-days="30" aria-pressed="false">30 days</button></div></div>
+      <div class="skill-compare">
+        <div class="skill-figure"><span>MODEL</span><strong class="cyan" id="accuracy">—</strong><small id="accuracy-detail">Awaiting outcomes</small></div>
+        <div class="skill-delta" id="skill-delta-wrap"><span id="baseline-detail">Compared with always predicting UP</span></div>
+      </div>
+      <p class="signal-note" id="sample-note">Awaiting scored outcomes.</p>
+      <div class="model-description"><strong id="model-name">VAE-Transformer</strong><span class="separator">/</span><span id="feature-set">Market only</span><span class="small-badge" id="horizon-description">1h horizon</span></div>
+    </article>
+
+    <article class="panel holdout-panel deployed-only" aria-labelledby="holdout-title">
+      <div class="panel-heading"><div><h2 id="holdout-title">Held-out test performance<button type="button" class="info" data-tip="Measured once on a purged holdout the model never saw in training. ROC-AUC is the headline: 0.50 means the model ranks positives no better than chance, and accuracy alone can hide that.">?</button></h2><p>Each deployed model, scored once on data withheld from training</p></div><span class="subtle-tag">OFFLINE EVALUATION</span></div>
+      <div class="holdout-grid" id="holdout-grid"></div>
+      <p class="signal-note" id="holdout-note">Loading held-out metrics…</p>
+    </article>
+
+    <section class="metrics deployed-only" aria-label="Model performance metrics">
+      <article class="metric-card"><div class="metric-label">SCORED FORECASTS <span>✓</span></div><div class="metric-value" id="scored">0</div><div class="metric-detail" id="scored-detail">No outcomes scored yet</div><div class="metric-foot">Only finalized target candles count</div></article>
+      <article class="metric-card"><div class="metric-label">PENDING OUTCOMES <span>◷</span></div><div class="metric-value" id="pending">0</div><div class="metric-detail" id="pending-detail">Waiting for the first forecast</div><div class="metric-foot" id="missing-detail">Predictions are saved before evaluation</div></article>
+      <article class="metric-card"><div class="metric-label">BRIER SCORE <span>◎</span><button type="button" class="info" data-tip="Mean squared error of the probability itself. 0 is perfect, 0.25 is what you get by always saying 50%. Lower is better.">?</button></div><div class="metric-value" id="brier">—</div><div class="metric-detail">Probability quality · lower is better</div><div class="metric-foot">0 is perfect · 0.25 for constant 50%</div></article>
+    </section>
+
+    <article class="panel performance-panel deployed-only"><div class="panel-heading"><div><h2>Accuracy over time</h2><p id="chart-description">Trailing 7-day accuracy · scored forecasts only</p></div><span class="subtle-tag">LIVE EVALUATION</span></div><div class="chart-legend"><span><i class="legend-line cyan-line"></i> Model</span><span><i class="legend-line muted-line"></i> Always UP baseline</span></div><div class="chart-wrap"><canvas id="accuracy-chart" aria-label="Rolling model accuracy and always UP baseline" role="img"></canvas><div class="chart-empty" id="chart-empty"><span class="empty-symbol">⌁</span><strong>Good evidence takes time.</strong><p>Your accuracy curve appears as forecasts reach their target time.</p></div></div><div class="chart-footer"><span id="window-note">No historical tests are included in live accuracy.</span><span>UTC</span></div></article>
+
+    <article class="panel deployed-only" id="qualification"><div class="panel-heading"><div><h2>Does the reliability gate work?<button type="button" class="info" data-tip="Accuracy broken down by the reliability band assigned at issue time, and by market regime. If the gate is informative, higher reliability bands should score better.">?</button></h2><p id="qualification-performance">Awaiting issue-time signal records.</p></div></div>
+      <div class="qual-summary" id="qualification-summary"></div>
+      <div class="table-scroll"><table class="qual-table"><thead><tr><th>BUCKET</th><th>GROUP</th><th>ACCURACY</th><th>SCORED</th></tr></thead><tbody id="qualification-groups"><tr><td colspan="4"><div class="table-empty">Awaiting scored forecasts with saved issue-time annotations.</div></td></tr></tbody></table></div>
+      <p class="signal-note" id="qualification-note"></p>
+    </article>
+
+    <article class="panel latest-panel deployed-only"><div class="panel-heading"><div><h2>Latest raw prediction</h2><p>Original forecast, saved at issue time</p></div><span class="dot" id="latest-dot"></span></div><div id="latest-empty" class="latest-empty"><span class="empty-symbol">↗</span><strong>Ready for the first forecast</strong><p>The hourly worker collects market data and records predictions automatically.</p></div><div id="latest-content" hidden><div class="prediction-direction" id="direction">—</div><div class="probability-heading"><span>Probability of UP</span><b id="probability">—</b></div><div class="probability-track"><div id="probability-fill"></div></div><dl class="prediction-facts"><div><dt>Reference close</dt><dd id="reference-price">—</dd></div><div><dt>Issued at</dt><dd id="issued-at">—</dd></div><div><dt>Outcome due</dt><dd id="target-at">—</dd></div><div><dt>Status</dt><dd id="latest-status">Pending</dd></div></dl></div><div class="model-version"><label for="version-select">Model version</label><select id="version-select"><option value="">Current deployment</option></select></div></article>
+
+    <section class="panel history-panel deployed-only" id="predictions"><div class="panel-heading"><div><h2>Prediction history</h2><p>Saved forecasts and their realized outcomes</p></div><select id="status-filter" aria-label="Filter prediction status"><option value="">All outcomes</option><option value="scored">Scored</option><option value="pending">Pending</option><option value="awaiting_market_data">Missing outcome data</option><option value="excluded_late">Excluded: issued too late</option></select></div><div class="table-scroll"><table><thead><tr><th>ISSUED AT · UTC</th><th>PREDICTION</th><th>P(UP)</th><th>REFERENCE CLOSE</th><th>OUTCOME CLOSE</th><th>TARGET TIME · UTC</th><th>RESULT</th></tr></thead><tbody id="history-rows"><tr><td colspan="7"><div class="table-empty">No recorded forecasts yet.<small>New predictions will appear here automatically.</small></div></td></tr></tbody></table></div><div class="table-footer"><span id="history-count">0 forecasts</span><div><button class="text-button" id="previous-page" disabled>← Previous</button><button class="text-button" id="next-page" disabled>Next →</button></div></div></section>
   </section>
-  <section class="market-strip" aria-label="Current market context"><div class="market-price"><span>BTC / USDT · Latest hourly close</span><strong id="ai-price">—</strong></div><div><span>MARKET REGIME</span><strong id="ai-regime">Unavailable</strong></div><div><span>INTERNAL SENTIMENT</span><strong id="ai-sentiment">Unavailable</strong></div><div><span>LAST MODEL REFRESH · UTC</span><strong id="ai-refreshed">Awaiting data</strong></div></section>
-  <section id="signals" aria-labelledby="signals-title"><div class="section-heading"><div><h2 id="signals-title">Forecast signals</h2><p>Direction and validated reliability, shown separately.</p></div><span class="subtle-tag" id="reliability-threshold">RELIABILITY GATE</span></div><div class="forecast-cards" id="forecast-cards" aria-live="polite"><article class="signal-card"><p>Loading saved forecasts…</p></article></div><p class="signal-note" id="signal-note">Only validated reliability can qualify a directional signal. Probabilities are not reliability scores.</p></section>
-  <section class="analyst-layout" aria-label="AI analysis and market research">
-    <article class="panel analyst-panel" id="analyst"><div class="panel-heading"><div><span class="eyebrow">RESEARCH WORKSPACE</span><h2>AI Market Analyst</h2><p>Ask about your models and the news around Bitcoin.</p></div><button class="text-button" id="clear-chat" type="button">Clear chat</button></div><div class="provider-status" id="provider-status">Checking provider configuration…</div><div class="agent-strip" aria-label="Agent activity"><span id="agent-forecast">Forecast · idle</span><span id="agent-research">Research · idle</span><span id="agent-review">Review · idle</span><span id="agent-validation">Validation · idle</span><span id="agent-decision">Decision · idle</span></div><div class="chat-log" id="chat-log" role="log" aria-label="Chat history" aria-live="polite"><div class="chat-welcome"><div class="analyst-orb">✧</div><h3>A clearer view of BTC.</h3><p>Compare model signals, inspect reliability, or explore current market evidence with linked sources.</p><span>Grounded in your saved forecasts</span></div></div><div class="quick-questions" id="quick-questions" aria-label="Suggested questions"></div><form id="chat-form"><label class="sr-only" for="chat-input">Ask the AI market analyst</label><div class="chat-compose"><textarea id="chat-input" maxlength="2000" rows="2" placeholder="Ask about BTC, a forecast, or current news…" required></textarea><button class="primary-button" id="send-chat" type="submit">Send ↗</button></div><div class="chat-foot"><span id="chat-status" role="status">Ready · research runs only when needed</span><span>Enter to send · Shift + Enter for a new line</span></div></form></article>
-    <article class="panel evidence-panel" id="evidence"><div class="panel-heading"><div><span class="eyebrow">AI NEWS REVIEW</span><h2>News analysis</h2><p id="evidence-status">No news analysis requested yet</p></div><button class="text-button" id="research-news" type="button" aria-label="Refresh Bitcoin news analysis">↻ Refresh news</button></div><div class="evidence-disclaimer">External news is context only. It does not change model reliability.</div><div class="evidence-list" id="evidence-list"><div class="evidence-empty"><span>◎</span><strong>No news analysis yet.</strong><p>Ask a current-news question or refresh this section. The 30-second dashboard update does not call research providers.</p></div></div><div class="evidence-footer" id="evidence-footer">News context is reviewed before it is shown.</div></article>
+
+  <!-- ===================== VIEW 4 · METHOD & STATUS ===================== -->
+  <section class="view" id="view-method" data-view="method" hidden aria-label="Method and system status">
+    <section class="page-heading" id="method"><div><div class="eyebrow">LIVE OPERATIONS</div><h1>System health</h1><p>The collector runs on its own schedule, with or without this page open. These are its vital signs.</p></div></section>
+
+    <article class="panel healthcheck-panel" aria-labelledby="healthcheck-title">
+      <div class="panel-heading"><div><h2 id="healthcheck-title">Live status</h2><p>The collector runs hourly on its own schedule, with or without this page open.</p></div><span class="badge" id="hc-updated">CHECKING</span></div>
+      <div class="healthcheck" role="group" aria-label="System healthcheck">
+      <article class="hc-tile" id="hc-worker" data-state="idle"><span class="hc-label">Hourly worker</span><strong class="hc-value">—</strong><span class="hc-detail">Checking</span></article>
+      <article class="hc-tile" id="hc-cycle" data-state="idle"><span class="hc-label">Last cycle</span><strong class="hc-value">—</strong><span class="hc-detail">Checking</span></article>
+      <article class="hc-tile" id="hc-freshness" data-state="idle"><span class="hc-label">Candle freshness</span><strong class="hc-value">—</strong><span class="hc-detail">Checking</span></article>
+      <article class="hc-tile" id="hc-next" data-state="idle"><span class="hc-label">Next scan</span><strong class="hc-value">—</strong><span class="hc-detail">Checking</span></article>
+      <article class="hc-tile" id="hc-duration" data-state="idle"><span class="hc-label">Run duration</span><strong class="hc-value">—</strong><span class="hc-detail">Checking</span></article>
+      <article class="hc-tile" id="hc-sentiment" data-state="idle"><span class="hc-label">News coverage</span><strong class="hc-value">—</strong><span class="hc-detail">Checking</span></article>
+      <article class="hc-tile" id="hc-backup" data-state="idle"><span class="hc-label">History backup</span><strong class="hc-value">—</strong><span class="hc-detail">Checking</span></article>
+      <article class="hc-tile" id="hc-scored" data-state="idle"><span class="hc-label">Forecasts scored</span><strong class="hc-value">—</strong><span class="hc-detail">Checking</span></article>
+      </div>
+    </article>
+
+    <section class="continuous-grid" id="market-monitor" aria-label="Continuous market monitoring">
+      <article class="panel"><div class="panel-heading"><div><h2>Market monitor</h2><p id="scan-cadence">Scheduled independently of this browser</p></div><span class="badge" id="scan-worker">CONNECTING</span></div><dl class="continuous-facts"><div><dt>Last market scan</dt><dd id="scan-last">Not yet available</dd></div><div><dt>Next market scan</dt><dd id="scan-next">Not yet available</dd></div><div><dt>Last successful prediction cycle</dt><dd id="scan-success">Not yet available</dd></div><div><dt>History backup</dt><dd id="scan-backup">Checking</dd></div></dl><p class="signal-note" id="scan-error"></p></article>
+      <article class="panel"><div class="panel-heading"><div><h2>Research trigger</h2><p>Research runs only when meaningful changes occur</p></div></div><dl class="continuous-facts"><div><dt>Last research</dt><dd id="research-last-time">Not yet available</dd></div><div><dt>Trigger</dt><dd id="research-trigger-reason">No event yet</dd></div></dl></article>
+    </section>
+
+    <section class="panel" aria-labelledby="deployed-title"><div class="panel-heading"><div><h2 id="deployed-title">Deployed models</h2><p>One selected artifact per horizon, chosen by walk-forward validation</p></div></div><div class="deployed-grid" id="deployed-models"><p class="signal-note">Loading deployment registry…</p></div></section>
+
+    <section class="panel workspace-about" id="framework" tabindex="-1"><h2>About the framework</h2><p>CryptoLens combines saved forecasting models, live outcome monitoring, and reviewed news context. The Research, Review, and Decision agents use the OpenAI Agents SDK to prepare answers from application data and retrieved sources.</p><p>Forecasts are recorded before outcomes are scored. Directional probability and validated reliability are shown separately. News provides context and does not increase a model's measured reliability.</p></section>
+
+    <section class="panel workspace-about" id="thesis" tabindex="-1"><h2>Thesis prototype</h2><p>This application explores how market data and news context can support cryptocurrency forecasting research. Bitcoin, Ethereum and Cardano are all within the study's scope, and each is selectable above.</p><p>Only Bitcoin currently has trained artifacts, deployed across the 1h, 6h and 24h horizons. Ethereum and Cardano are declared in the asset catalogue but report no model, so the interface withholds a forecast for them rather than estimating one or reusing Bitcoin's. Each needs its own market history and training run; because the sentiment corpus is Bitcoin-specific, their first models would be market-only.</p><a href="/docs" target="_blank" rel="noopener noreferrer">Open API documentation ↗</a></section>
+
   </section>
-<section class="continuous-grid" aria-label="Continuous market monitoring">
-<article class="panel"><div class="panel-heading"><div><h2>Market monitor</h2><p id="scan-cadence">Scheduled independently of this browser</p></div><span class="badge" id="scan-worker">CONNECTING</span></div><dl class="continuous-facts"><div><dt>Last market scan</dt><dd id="scan-last">Not yet available</dd></div><div><dt>Next market scan</dt><dd id="scan-next">Not yet available</dd></div><div><dt>Last successful prediction cycle</dt><dd id="scan-success">Not yet available</dd></div><div><dt>History backup</dt><dd id="scan-backup">Checking</dd></div></dl><p class="signal-note" id="scan-error"></p></article>
-<article class="panel"><div class="panel-heading"><div><h2>Market research</h2><p>Research runs when meaningful changes occur</p></div><span class="badge" id="research-state">IDLE</span></div><dl class="continuous-facts"><div><dt>Last research</dt><dd id="research-last-time">Not yet available</dd></div><div><dt>Trigger</dt><dd id="research-trigger-reason">No event yet</dd></div></dl><p class="signal-note" id="research-event-note">Web research is event-triggered to reduce unnecessary API calls.</p></article>
-</section><section class="panel continuous-context"><div class="panel-heading"><h2>Latest event context</h2></div><p id="stored-market-context">Awaiting validated research.</p><div id="continuous-agent-status" aria-label="Operational agent status"></div></section>
-  <section class="page-heading monitoring-heading" id="monitoring"><div><div class="eyebrow">FORWARD PERFORMANCE</div><h2>Model monitoring <span class="badge" id="model-badge">COLLECTING</span></h2><p>Every forecast recorded. Every outcome accounted for.</p></div><button class="primary-button" id="refresh-button">↻ <span>Run refresh</span></button></section>
-  <div class="toolbar"><div class="model-description"><strong id="model-name">VAE-Transformer</strong><span class="separator">/</span><span id="feature-set">Market only</span><span class="small-badge" id="horizon-description">1h horizon</span></div><div class="period" aria-label="Accuracy window"><button data-days="7" class="selected" aria-pressed="true">7 days</button><button data-days="30" aria-pressed="false">30 days</button></div></div>
-  <div class="notice" id="notice" role="status" hidden></div>
-  <section class="metrics" aria-label="Model performance metrics">
-    <article class="metric-card"><div class="metric-label">DIRECTIONAL ACCURACY <span>↗</span></div><div class="metric-value cyan" id="accuracy">—</div><div class="metric-detail" id="accuracy-detail">Awaiting outcomes</div><div class="metric-foot" id="baseline-detail">Compared with always predicting UP</div></article>
-    <article class="metric-card"><div class="metric-label">SCORED FORECASTS <span>✓</span></div><div class="metric-value" id="scored">0</div><div class="metric-detail" id="scored-detail">No outcomes scored yet</div><div class="metric-foot">Only finalized target candles count</div></article>
-    <article class="metric-card"><div class="metric-label">PENDING OUTCOMES <span>◷</span></div><div class="metric-value" id="pending">0</div><div class="metric-detail" id="pending-detail">Waiting for the first forecast</div><div class="metric-foot" id="missing-detail">Predictions are saved before evaluation</div></article>
-    <article class="metric-card"><div class="metric-label">BRIER SCORE <span>◎</span></div><div class="metric-value" id="brier">—</div><div class="metric-detail">Probability quality · lower is better</div><div class="metric-foot">0 is perfect · 0.25 for constant 50%</div></article>
-  </section>
-  <section class="panel continuous-context"><h2>Signal qualification performance</h2><p id="qualification-performance">Awaiting issue-time signal records.</p><div id="qualification-groups"></div></section>
-  <section class="chart-grid">
-    <article class="panel performance-panel"><div class="panel-heading"><div><h2>Accuracy over time</h2><p id="chart-description">Trailing 7-day accuracy · scored forecasts only</p></div><span class="subtle-tag">LIVE EVALUATION</span></div><div class="chart-legend"><span><i class="legend-line cyan-line"></i> Model</span><span><i class="legend-line muted-line"></i> Always UP baseline</span></div><div class="chart-wrap"><canvas id="accuracy-chart" aria-label="Rolling model accuracy and always UP baseline" role="img"></canvas><div class="chart-empty" id="chart-empty"><span class="empty-symbol">⌁</span><strong>Good evidence takes time.</strong><p>Your accuracy curve appears as forecasts reach their target time.</p></div></div><div class="chart-footer"><span id="window-note">No historical tests are included in live accuracy.</span><span>UTC</span></div></article>
-    <article class="panel latest-panel"><div class="panel-heading"><div><h2>Latest raw prediction</h2><p>Original forecast, saved at issue time</p></div><span class="dot" id="latest-dot"></span></div><div id="latest-empty" class="latest-empty"><span class="empty-symbol">↗</span><strong>Ready for the first forecast</strong><p>The hourly worker collects market data and records predictions automatically.</p></div><div id="latest-content" hidden><div class="prediction-direction" id="direction">—</div><div class="probability-heading"><span>Probability of UP</span><b id="probability">—</b></div><div class="probability-track"><div id="probability-fill"></div></div><dl class="prediction-facts"><div><dt>Reference close</dt><dd id="reference-price">—</dd></div><div><dt>Issued at</dt><dd id="issued-at">—</dd></div><div><dt>Outcome due</dt><dd id="target-at">—</dd></div><div><dt>Status</dt><dd id="latest-status">Pending</dd></div></dl></div><div class="model-version"><label for="version-select">Model version</label><select id="version-select"><option value="">Current deployment</option></select></div></article>
-  </section>
-  <section class="panel history-panel" id="predictions"><div class="panel-heading"><div><h2>Prediction history</h2><p>Saved forecasts and their realized outcomes</p></div><select id="status-filter" aria-label="Filter prediction status"><option value="">All outcomes</option><option value="scored">Scored</option><option value="pending">Pending</option><option value="awaiting_market_data">Missing outcome data</option><option value="excluded_late">Excluded: issued too late</option></select></div><div class="table-scroll"><table><thead><tr><th>ISSUED AT · UTC</th><th>PREDICTION</th><th>P(UP)</th><th>REFERENCE CLOSE</th><th>OUTCOME CLOSE</th><th>TARGET TIME · UTC</th><th>RESULT</th></tr></thead><tbody id="history-rows"><tr><td colspan="7"><div class="table-empty">No recorded forecasts yet.<small>New predictions will appear here automatically.</small></div></td></tr></tbody></table></div><div class="table-footer"><span id="history-count">0 forecasts</span><div><button class="text-button" id="previous-page" disabled>← Previous</button><button class="text-button" id="next-page" disabled>Next →</button></div></div></section>
-  <section class="panel health-panel" id="health"><div class="panel-heading"><div><h2>System health</h2><p>Collection, freshness, and the last successful run</p></div><span class="badge" id="worker-badge">WAITING</span></div><div class="health-grid"><div><span>Last successful refresh</span><strong id="last-success">Not yet run</strong></div><div><span>Latest candle close</span><strong id="candle-freshness">Awaiting market data</strong></div><div><span>Last run duration</span><strong id="run-duration">—</strong></div><div><span>Sentiment coverage</span><strong id="sentiment-coverage">Awaiting news collection</strong></div></div><div class="health-message" id="health-message">Monitoring starts automatically and continues while this page is closed.</div><div class="runs" id="recent-runs"></div></section>
+
   <footer class="page-footer"><span><span class="dot"></span> Forward monitoring · original predictions preserved</span><span id="last-updated">Connecting…</span></footer>
 </main>
 </body></html>

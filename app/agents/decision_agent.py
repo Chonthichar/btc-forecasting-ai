@@ -16,7 +16,60 @@ def reliability_text(view):
     score = f"Validated reliability: {view.reliability:.1%}. " if view.reliability is not None else ""
     return f"{view.horizon_hours}h: {score}{view.reliability_reason} This is a qualified signal, not a guarantee."
 
-def build_facts(context):
+def deployment_facts(predictions):
+    """The six frozen-model outputs, one sentence each.
+
+    The answer guard only lets the model reproduce numbers that appear in a
+    cited fact, so stating them here is what allows the LLM to discuss them
+    while making an altered figure impossible to render.
+    """
+    facts = {}
+    candle = predictions.get("forecast_candle_utc")
+    close = predictions.get("btc_close")
+    if candle:
+        facts["deployment.candle"] = (
+            f"All deployment model outputs are for the closed candle at {candle}"
+            + (f", when BTC closed at ${close:,.2f}." if close is not None else "."))
+
+    for horizon, entry in (predictions.get("direction") or {}).items():
+        key = f"direction.{horizon}h"
+        up, down = entry.get("up_score"), entry.get("down_score")
+        if up is None:
+            facts[key] = f"The {horizon}h direction model produced no score."
+            continue
+        facts[key] = (
+            f"The {horizon}h direction model leans {entry.get('label')} with an UP score of {up:.2%} "
+            f"and a DOWN score of {down:.2%}. These are model scores, not calibrated probabilities.")
+        auc = entry.get("walk_forward_roc_auc")
+        if auc is not None:
+            facts[f"{key}.validation"] = (
+                f"The {horizon}h direction model's mean walk-forward ROC-AUC was {auc:.4f}. "
+                "This is a research diagnostic and must not be presented as a forecast probability.")
+
+    for horizon, entry in (predictions.get("movement_risk") or {}).items():
+        key = f"risk.{horizon}h"
+        score = entry.get("model_score")
+        if score is None:
+            facts[key] = f"The {horizon}h movement-risk model produced no score."
+            continue
+        facts[key] = (
+            f"The {horizon}h large-movement risk score is {score:.2%}, in the {entry.get('risk_level')} band. "
+            f"The event is: {entry.get('event_definition')}. It is a two-sided barrier touch, "
+            "so it says nothing about direction and is not a crash probability.")
+        observed = entry.get("historical_event_rate")
+        baseline = entry.get("baseline_event_rate")
+        if observed is not None:
+            facts[f"{key}.history"] = (
+                f"Historically the event occurred {observed:.2%} of the time for {horizon}h scores in the "
+                f"{entry.get('risk_level')} band"
+                + (f", against a base rate of {baseline:.2%} across all hours." if baseline is not None else ".")
+                + " That is an observed out-of-fold frequency, not this model's probability for now.")
+    facts["concept.deployment_scores"] = (
+        "Direction and risk scores come from frozen models and are authoritative. "
+        "They may be explained but must never be recomputed, averaged or adjusted.")
+    return facts
+
+def build_facts(context, predictions=None):
     facts = {}
     market = context.market
     if market.price is not None:
@@ -30,6 +83,8 @@ def build_facts(context):
     sentiment = context.sentiment
     facts["sentiment.score"] = f"Internal news sentiment score: {sentiment.score:.6g}." if sentiment.score is not None else "The internal sentiment score is unavailable."
     facts["sentiment.label"] = f"Internal sentiment label: {sentiment.label}." if sentiment.label else "The current snapshot does not provide a sentiment label."
+    if predictions:
+        facts.update(deployment_facts(predictions))
     facts["concept.probability_up"] = "P(UP) estimates the chance that the target closing price will exceed the saved reference close. It describes predicted direction, not validated reliability."
     facts["concept.reliability"] = "Validated reliability requires a separately evaluated reliability or calibration measure. A model's directional probability alone does not supply that measure."
     if context.forecasts and all(view.reliability is None for view in context.forecasts.values()):
@@ -56,7 +111,7 @@ class DecisionAgent:
         self.settings, self.validator = settings, validator
         self.llm = llm or LLMService(settings)
 
-    def run(self, question, history, context, research, validation, structured=False):
+    def run(self, question, history, context, research, validation, structured=False, predictions=None):
         from app.services.market_decision import enforce_decision
         plan = None
         def finish(answer, status, sources):
@@ -65,7 +120,7 @@ class DecisionAgent:
             decision = enforce_decision(context, research, validation, horizons_for(question),
                 proposal=plan.market_decision if plan else None, explanation=answer)
             return answer, status, sources, decision
-        facts = build_facts(context)
+        facts = build_facts(context, predictions)
         facts["app.llm"] = (f"The Decision Agent is configured to use OpenAI {self.settings.openai_model}."
                             if self.settings.openai_model else "No OpenAI model is configured.")
         facts["app.horizons"] = "The dashboard covers the 1h, 6h, and 24h forecast horizons."
